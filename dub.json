@@ -1,0 +1,12 @@
+{
+	"name": "pngtext",
+	"authors": [
+		"Nafees"
+	],
+	"dependencies": {
+		"utils": "~>0.2.0"
+	},
+	"description": "Stores plain text in PNG images without decreasing image quality that much",
+	"copyright": "Copyright © 2018, Nafees",
+	"license": "MIT"
+}
