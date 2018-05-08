@@ -93,9 +93,9 @@ private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
 	foreach (pixel; stream){
 		if (pixel[0] % 2 == 0){
 			// it has data
-			ubyte[3] toAdd = pixel[1 .. 4];
+			ubyte[3] toAdd;
 			// remove the image's pixel's data from it
-			foreach (i, currentByte; toAdd){
+			foreach (i, currentByte; pixel[1 .. 4]){
 				toAdd[i] = currentByte.readLastBits(density);
 			}
 			rawData ~= toAdd;
@@ -128,27 +128,18 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 	// divide the data into bytes where only last n-bits are used where n = density
 	/// stores the data to be added to individual pixel
 	ubyte[] rawData;
-	rawData.length = pixelsNeeded;
 	ubyte bytesPerChar = 8 / density;
-	for (uinteger readFrom = 0, writeTo = 0; readFrom < data.length; readFrom ++){
-		rawData[writeTo .. writeTo+bytesPerChar] = data[readFrom].splitByte(bytesPerChar);
-		writeTo += bytesPerChar;
+	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
+		rawData ~= data[readFrom].splitByte(bytesPerChar);
 	}
 	// calculate how much "gap" to leave between encoded pixels
 	uinteger gapPixelsCount = (stream.length / pixelsNeeded) - 1;
 	// mark the pixels that will be storing data, and make sure other pixels aren't marked, and put the data in marked pixels
 	for (uinteger i = 0, readFrom = 0; i < stream.length; i ++){
-		if (i % gapPixelsCount == 0){
-			if (stream[i][0] % 2 != 0){
+		if (i % gapPixelsCount == 0 && readFrom < rawData.length){
+			if (stream[i][0] % 2 == 1){
 				// mark it
-				if (stream[i][0] % 2 == 255)
-					stream[i][0] --;
-				else
-					stream[i][0] ++;
-			}
-			// if there's no more data to put, skip
-			if (readFrom >= rawData.length){
-				continue;
+				stream[i][0] --;
 			}
 			// put data in it
 			ubyte[3] rawDataToAdd = [0,0,0];
@@ -158,13 +149,12 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 				rawDataToAdd = rawData[readFrom .. readFrom + 3];
 			}
 			foreach (index, toAdd; rawDataToAdd){
-				stream[i][index] += toAdd;
+				stream[i][index+1] = stream[i][index+1].setLastBits(density,toAdd);
 			}
-		}else{
-			// unmark if marked
-			if (stream[i][0] % 2 == 0){
-				stream[i][0] ++;
-			}
+			readFrom += 3;
+		}else if (stream[i][0] % 2 == 0){
+			// unmark
+			stream[i][0] ++;
 		}
 	}
 	return stream;
@@ -172,7 +162,7 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 
 /// stores a number in the last n-bits of a ubyte, the number must be less than 2^n
 private ubyte setLastBits(ubyte originalNumber, ubyte n, ubyte toInsert){
-	assert (n > 0 && toInsert < pow(2, n-1), "n must be > 0 and toInsert < pow(2,n-1) in setLastBits");
+	assert (n > 0 && toInsert < pow(2, n), "n must be > 0 and toInsert < pow(2,n) in setLastBits");
 	// first, empty the last bits, so we can just use + to add
 	originalNumber -=  originalNumber % pow(2, n);
 	return cast(ubyte)(originalNumber + toInsert);
@@ -195,11 +185,10 @@ unittest{
 	assert (cast(ubyte)(9).readLastBits(3) == 1);
 }
 
-/// splits a number stored in ubyte into several bytes, n must be either 2, 4, or 8
+/// splits a number stored in ubyte into several bytes
 /// number is the number to split
 /// n is the number of bytes to split into
 private ubyte[] splitByte(ubyte number, ubyte n){
-	assert (n == 2 || n == 4 || n == 8, "n must be 2, 4, or 8 in splitByte");
 	ubyte[] r;
 	r.length = n;
 	uint modBy = pow(2, 8 / n);
