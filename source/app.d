@@ -173,8 +173,6 @@ string[] validateOptions(string[string] options, string command){
 	string[] filesToCheck = [];
 	if ("input" in options)
 		filesToCheck ~= options["input"];
-	if ("output" in options)
-		filesToCheck ~= options["output"];
 	if ("file" in options)
 		filesToCheck ~= options["file"];
 	foreach (toCheck; filesToCheck){
