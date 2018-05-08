@@ -11,12 +11,13 @@ import pngtext;
 const VERSION = "0.0.1";
 
 // help text
-const string HELP_TEXT = "usage:
+const string HELP_TEXT = "pngtext - stores data inside png images without affecting quality much
+usage:
 pngtext [command] [options]
 commands:
   write           write to a png file
-  read            read text from a png file
-  size            calculate how many bytes a png image can store
+  read            read data from a png file
+  size            calculate how many bytes a png image can store, use -d to specify density (default=2)
 options:
   --file -f       specify file containing data to write into png image
   --input -i      specify original png image to write to, or read from
@@ -71,7 +72,7 @@ void main(string[] args){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
 				string text = readDataFromPng(inputFile, density);
-				writeln (text);
+				write (text);
 			}else if (command == "size"){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
