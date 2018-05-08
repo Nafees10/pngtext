@@ -18,7 +18,7 @@ commands:
   read            read text from a png file
   size            calculate how many bytes a png image can store
 options:
-  --file -f       specify file containing text to write into png image
+  --file -f       specify file containing data to write into png image
   --input -i      specify original png image to write to, or read from
   --ouput -o      specify file to write output to, for write
   --text -t       specify text to write into png image
