@@ -72,9 +72,9 @@ void main(string[] args){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
 				string text = readDataFromPng(inputFile, density);
-				if ("file" in options){
+				if ("output" in options){
 					try{
-						File outputFile = File(options["file"], "w");
+						File outputFile = File(options["output"], "w");
 						outputFile.write(text);
 						outputFile.close();
 					}catch (Exception e){
@@ -184,7 +184,7 @@ string[] validateOptions(string[string] options, string command){
 	string[] filesToCheck = [];
 	if ("input" in options)
 		filesToCheck ~= options["input"];
-	if ("file" in options && command != "read")
+	if ("file" in options)
 		filesToCheck ~= options["file"];
 	foreach (toCheck; filesToCheck){
 		if (!exists(toCheck) || !isFile(toCheck)){
