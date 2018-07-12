@@ -39,8 +39,8 @@ To write non-plain-text data, or large amount of text, from file, use the `--fil
 ### Reading Data from PNG Image:
 To read data, that was written using pngtext, use the `read` command:  
 `pngtext read -i pngFile.png`  
-This will write the data stored to stdout, so in bash, use this to write back to a file:  
-`pngtext read -i pngFile.png > fileToWriteDataTo`  
+To read the stored data into a file, use the `--output` or `-o` option to specify the output file:  
+`pngtext read -i pngFile.png -o outputDataFile`
 
 ### Calculating Maximum Data Capacity from PNG Image:
 To calculate exactly how many bytes a png image will be able to store, use the `size` command:  
