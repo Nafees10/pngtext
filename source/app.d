@@ -8,12 +8,12 @@ import std.file;
 import pngtext;
 
 /// stores the version
-const VERSION = "0.0.1";
+const VERSION = "0.0.9";
 
 // help text
 const string HELP_TEXT = "pngtext - stores data inside png images without affecting quality much
 usage:
-pngtext [command] [options]
+pngtext command [options]
 commands:
   write           write to a png file
   read            read data from a png file
@@ -21,9 +21,9 @@ commands:
 options:
   --file -f       specify file containing data to write into png image
   --input -i      specify original png image to write to, or read from
-  --ouput -o      specify file to write output to, for write
+  --ouput -o      specify file to write output to, for write, and read
   --text -t       specify text to write into png image
-  --density -d    specify how many \"dense\" text will be stored in pixels. min and default is 2. It can be either 2, 4, or 8
+  --density -d    specify how \"dense\" data will be stored in pixels. min and default is 2. It can be either 2, 4, or 8
   --version -v    display this program's version
   --help -h       display this message";
 
@@ -72,7 +72,17 @@ void main(string[] args){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
 				string text = readDataFromPng(inputFile, density);
-				write (text);
+				if ("file" in options){
+					try{
+						File outputFile = File(options["file"], "w");
+						outputFile.write(text);
+						outputFile.close();
+					}catch (Exception e){
+						writeln ("Failed to write to output file:\n",e.msg);
+					}
+				}else{
+					write (text);
+				}
 			}else if (command == "size"){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
@@ -80,7 +90,7 @@ void main(string[] args){
 			}
 		}
 	}else{
-		writeln(HELP_TEXT);
+		writeln("usage:\npngtext command [options]");
 	}
 }
 
@@ -174,7 +184,7 @@ string[] validateOptions(string[string] options, string command){
 	string[] filesToCheck = [];
 	if ("input" in options)
 		filesToCheck ~= options["input"];
-	if ("file" in options)
+	if ("file" in options && command != "read")
 		filesToCheck ~= options["file"];
 	foreach (toCheck; filesToCheck){
 		if (!exists(toCheck) || !isFile(toCheck)){
