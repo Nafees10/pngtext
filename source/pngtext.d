@@ -180,15 +180,12 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 			ubyte[4] rawDataToAdd = [0,0,0,0];
 			// read data to add into a separate array
 			if (readFrom+4 >= rawData.length){
-				debug{import std.stdio; writeln("a");}
 				rawDataToAdd[0 .. rawData.length - readFrom] = rawData[readFrom .. rawData.length];
 			}else{
-				debug{import std.stdio; writeln("b");}
 				rawDataToAdd = rawData[readFrom .. readFrom + rawDataToAdd.length];
 			}
 			// insert that data into the png stream
 			foreach (index, toAdd; rawDataToAdd){
-				debug{import std.stdio; writeln("c");}
 				stream[i][index] = stream[i][index].setLastBits(density,toAdd);
 			}
 			readFrom += 4;
