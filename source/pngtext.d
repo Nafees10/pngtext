@@ -116,9 +116,16 @@ private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
 }
 
 private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte density){
+	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
+	assert (stream.length >= 12, "image must have at least 3 pixels");
+	// data can not be more than or equal to 2^(4*3*2) = 2^24 bytes
+	assert (data.length >= pow(2, 24), "data must be less than 16 megabytes");
+	// put the header into the data (header = stores the length of the data, excluding the header)
+	data = data.dup;
+	data = cast(ubyte[])data.length.denaryToChar() ~ data;
 	// make sure it'll fit
-	uinteger pixelsNeeded = (data.length * 8) / (density * 3);
-	if (cast(float)(cast(float)data.length * 8f) / (cast(float)density * 3f) % 1 > 0){
+	uinteger pixelsNeeded = (data.length * 8) / (density * 4);
+	if (cast(float)(cast(float)data.length * 8f) / (cast(float)density * 4f) % 1 > 0){
 		pixelsNeeded += 1;
 	}
 	if (pixelsNeeded > stream.length){
@@ -137,24 +144,19 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 	// mark the pixels that will be storing data, and make sure other pixels aren't marked, and put the data in marked pixels
 	for (uinteger i = 0, readFrom = 0; i < stream.length; i ++){
 		if (i % gapPixelsCount == 0 && readFrom < rawData.length){
-			if (stream[i][0] % 2 == 1){
-				// mark it
-				stream[i][0] --;
-			}
 			// put data in it
-			ubyte[3] rawDataToAdd = [0,0,0];
-			if (readFrom+3 >= rawData.length){
+			ubyte[4] rawDataToAdd = [0,0,0,0];
+			// read data to add into a separate array
+			if (readFrom+4 >= rawData.length){
 				rawDataToAdd[0 .. rawData.length - readFrom] = rawData[readFrom .. rawData.length];
 			}else{
-				rawDataToAdd = rawData[readFrom .. readFrom + 3];
+				rawDataToAdd = rawData[readFrom .. readFrom + rawData.length];
 			}
+			// insert that data into the png stream
 			foreach (index, toAdd; rawDataToAdd){
-				stream[i][index+1] = stream[i][index+1].setLastBits(density,toAdd);
+				stream[i][index] = stream[i][index].setLastBits(density,toAdd);
 			}
-			readFrom += 3;
-		}else if (stream[i][0] % 2 == 0){
-			// unmark
-			stream[i][0] ++;
+			readFrom += 4;
 		}
 	}
 	return stream;
