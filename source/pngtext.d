@@ -92,18 +92,26 @@ public string readDataFromPng(string pngFilename, ubyte density){
 /// extracts the stored data-stream from a png-stream
 /// Returns: the stream representing the data
 private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
+	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
+	assert (stream.length >= 12, "image must have at least 3 pixels");
+	// read the header, it'll be storing the size of the data stored
+	ubyte[3] headerBytes;
+	ubyte[12] headerPixels = stream[0]~stream[1]~stream[2];
+	foreach (i; 0 .. 12 ){
+		if ((i+1) % 4 == 0){
+			headerBytes[( (i+1) / 4 ) - 1] = joinByte(headerPixels[i-3 .. i+1]);
+		}
+	}
+	uinteger length = charToDenary(cast(char[])headerBytes);
 	/// stores the raw data extracted, this will be processed to remove the part storing the "image" and be "joined" to become 8-bit
 	ubyte[] rawData;
-	foreach (pixel; stream){
-		if (pixel[0] % 2 == 0){
-			// it has data
-			ubyte[3] toAdd;
-			// remove the image's pixel's data from it
-			foreach (i, currentByte; pixel[1 .. 4]){
-				toAdd[i] = currentByte.readLastBits(density);
-			}
-			rawData ~= toAdd;
+	rawData.length = (length / 4) * (8 / density);
+	for (uinteger i = 3, streamDataLength = length+3; i < streamDataLength; i++){
+		ubyte[4] toAdd;
+		foreach (index, currentByte; stream[i]){
+			toAdd[index] = currentByte.readLastBits(density);
 		}
+		rawData ~= toAdd;
 	}
 	/// number of bytes per actual data-storing-byte
 	ubyte bytesPerChar = 8/density;
@@ -123,7 +131,7 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
 	assert (stream.length >= 12, "image must have at least 3 pixels");
 	// data can not be more than or equal to 2^(4*3*2) = 2^24 bytes
-	assert (data.length >= pow(2, 24), "data must be less than 16 megabytes");
+	assert (data.length >= pow(2, 4*3*2), "data must be less than 2^(12*density) bytes");
 	// put the header into the data (header = stores the length of the data, excluding the header)
 	data = data.dup;
 	data = cast(ubyte[])data.length.denaryToChar() ~ data;
@@ -143,11 +151,9 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
 		rawData ~= data[readFrom].splitByte(bytesPerChar);
 	}
-	// calculate how much "gap" to leave between encoded pixels
-	uinteger gapPixelsCount = (stream.length / pixelsNeeded) - 1;
 	// mark the pixels that will be storing data, and make sure other pixels aren't marked, and put the data in marked pixels
 	for (uinteger i = 0, readFrom = 0; i < stream.length; i ++){
-		if (i % gapPixelsCount == 0 && readFrom < rawData.length){
+		if (readFrom < rawData.length){
 			// put data in it
 			ubyte[4] rawDataToAdd = [0,0,0,0];
 			// read data to add into a separate array
