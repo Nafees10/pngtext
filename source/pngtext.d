@@ -43,7 +43,11 @@ private void savePngStream(ubyte[4][] stream, string pngFilename, uinteger width
 public uinteger calculatePngCapacity(string pngFilename, ubyte density){
 	MemoryImage pngMem = readPng(pngFilename);
 	uinteger pixelCount = pngMem.width * pngMem.height;
-	return pixelCount / (8 / density);
+	if (pixelCount <= 3){
+		return 0;
+	}
+	pixelCount -= 3;
+	return (pixelCount*4) / (8 / density);
 }
 
 /// writes some data to a png image
