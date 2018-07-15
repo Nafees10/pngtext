@@ -88,24 +88,48 @@ public string readDataFromPng(string pngFilename, ubyte density){
 	return cast(string)cast(char[])extractDataFromPngStream(pngStream, density);
 }
 
+/// reads the header (data-length) from begining of png stream
+uinteger readHeader(ubyte[4][] stream){
+	ubyte[3] headerBytes;
+	ubyte[12] headerPixels = stream[0]~stream[1]~stream[2];
+	foreach (i, subPixel; headerPixels){
+		headerPixels[i] = subPixel.readLastBits(2);
+	}
+	foreach (i; 0 .. 12 ){
+		if ((i+1) % 4 == 0){
+			headerBytes[( (i+1) / 4 ) - 1] = joinByte(headerPixels[i-3 .. i+1]);
+		}
+	}
+	return charToDenary(cast(char[])headerBytes);
+}
+
+/// Returns: the header (first 3 pixels storing the data-length)
+ubyte[4][3] writeHeader(uint dataLength, ubyte[4][3] stream){
+	assert (dataLength <= pow (2, 24), "data-length cannot must be less than 16 megabytes");
+	ubyte[] data = cast(ubyte[])(dataLength.denaryToChar());
+	ubyte[] rawData;
+	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
+		rawData ~= data[readFrom].splitByte(4);
+	}
+	stream = stream.dup;
+	for (uinteger i = 0; i < stream.length; i ++){
+		// put data in it
+		// insert that data into the png stream
+		foreach (index; 0 .. 4){
+			stream[i][index] = stream[i][index].setLastBits(2,rawData[(i*4)+index]);
+		}
+	}
+	return stream;
+}
 
 /// extracts the stored data-stream from a png-stream
 /// Returns: the stream representing the data
 private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
 	assert (stream.length >= 12, "image must have at least 3 pixels");
-	// read the header, it'll be storing the size of the data stored
-	ubyte[3] headerBytes;
-	ubyte[12] headerPixels = stream[0]~stream[1]~stream[2];
-	foreach (i; 0 .. 12 ){
-		if ((i+1) % 4 == 0){
-			headerBytes[( (i+1) / 4 ) - 1] = joinByte(headerPixels[i-3 .. i+1]);
-		}
-	}
-	uinteger length = charToDenary(cast(char[])headerBytes);
+	uinteger length = readHeader(stream[0 .. 3]);
 	/// stores the raw data extracted, this will be processed to remove the part storing the "image" and be "joined" to become 8-bit
 	ubyte[] rawData;
-	rawData.length = (length / 4) * (8 / density);
 	for (uinteger i = 3, streamDataLength = length+3; i < streamDataLength; i++){
 		ubyte[4] toAdd;
 		foreach (index, currentByte; stream[i]){
@@ -131,19 +155,18 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
 	assert (stream.length >= 12, "image must have at least 3 pixels");
 	// data can not be more than or equal to 2^(4*3*2) = 2^24 bytes
-	assert (data.length >= pow(2, 4*3*2), "data must be less than 2^(12*density) bytes");
-	// put the header into the data (header = stores the length of the data, excluding the header)
-	data = data.dup;
-	data = cast(ubyte[])data.length.denaryToChar() ~ data;
+	assert (data.length < pow(2, 24), "data must be less than 16 megabytes");
 	// make sure it'll fit
 	uinteger pixelsNeeded = (data.length * 8) / (density * 4);
 	if (cast(float)(cast(float)data.length * 8f) / (cast(float)density * 4f) % 1 > 0){
 		pixelsNeeded += 1;
 	}
-	if (pixelsNeeded > stream.length){
+	if (pixelsNeeded+3 > stream.length){
 		throw new Exception ("there aren't enough pixels to hold that data");
 	}
 	stream = stream.dup;
+	// put the header into the data (header = stores the length of the data, excluding the header)
+	stream[0 .. 3] = writeHeader(cast(uint)data.length, stream[0 .. 3]);
 	// divide the data into bytes where only last n-bits are used where n = density
 	/// stores the data to be added to individual pixel
 	ubyte[] rawData;
@@ -151,19 +174,21 @@ private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte 
 	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
 		rawData ~= data[readFrom].splitByte(bytesPerChar);
 	}
-	// mark the pixels that will be storing data, and make sure other pixels aren't marked, and put the data in marked pixels
-	for (uinteger i = 0, readFrom = 0; i < stream.length; i ++){
+	for (uinteger i = 3, readFrom = 0; i < stream.length; i ++){
 		if (readFrom < rawData.length){
 			// put data in it
 			ubyte[4] rawDataToAdd = [0,0,0,0];
 			// read data to add into a separate array
 			if (readFrom+4 >= rawData.length){
+				debug{import std.stdio; writeln("a");}
 				rawDataToAdd[0 .. rawData.length - readFrom] = rawData[readFrom .. rawData.length];
 			}else{
-				rawDataToAdd = rawData[readFrom .. readFrom + rawData.length];
+				debug{import std.stdio; writeln("b");}
+				rawDataToAdd = rawData[readFrom .. readFrom + rawDataToAdd.length];
 			}
 			// insert that data into the png stream
 			foreach (index, toAdd; rawDataToAdd){
+				debug{import std.stdio; writeln("c");}
 				stream[i][index] = stream[i][index].setLastBits(density,toAdd);
 			}
 			readFrom += 4;
