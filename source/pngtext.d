@@ -95,29 +95,23 @@ uinteger readHeader(ubyte[4][] stream){
 	foreach (i, subPixel; headerPixels){
 		headerPixels[i] = subPixel.readLastBits(2);
 	}
-	foreach (i; 0 .. 12 ){
-		if ((i+1) % 4 == 0){
-			headerBytes[( (i+1) / 4 ) - 1] = joinByte(headerPixels[i-3 .. i+1]);
-		}
+	foreach (i; [0, 4, 8]){
+		headerBytes[i / 4] = joinByte(headerPixels[i .. i + 4]);
 	}
 	return charToDenary(cast(char[])headerBytes);
 }
 
 /// Returns: the header (first 3 pixels storing the data-length)
 ubyte[4][3] writeHeader(uint dataLength, ubyte[4][3] stream){
-	assert (dataLength <= pow (2, 24), "data-length cannot must be less than 16 megabytes");
+	assert (dataLength <= pow (2, 24), "data-length must be less than 16 megabytes");
 	ubyte[] data = cast(ubyte[])(dataLength.denaryToChar());
 	ubyte[] rawData;
 	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
 		rawData ~= data[readFrom].splitByte(4);
 	}
 	stream = stream.dup;
-	for (uinteger i = 0; i < stream.length; i ++){
-		// put data in it
-		// insert that data into the png stream
-		foreach (index; 0 .. 4){
-			stream[i][index] = stream[i][index].setLastBits(2,rawData[(i*4)+index]);
-		}
+	for (uinteger i = 0; i < rawData.length; i ++){
+		stream[i/4][i % 4] = stream[i/4][i % 4].setLastBits(2, rawData[i]);
 	}
 	return stream;
 }
@@ -130,9 +124,9 @@ private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
 	uinteger length = readHeader(stream[0 .. 3]);
 	/// stores the raw data extracted, this will be processed to remove the part storing the "image" and be "joined" to become 8-bit
 	ubyte[] rawData;
-	for (uinteger i = 3, streamDataLength = length+3; i < streamDataLength; i++){
+	for (uinteger i = 3; i < length; i++){
 		ubyte[4] toAdd;
-		foreach (index, currentByte; stream[i]){
+		foreach (index, currentByte; stream[i+3]){
 			toAdd[index] = currentByte.readLastBits(density);
 		}
 		rawData ~= toAdd;
