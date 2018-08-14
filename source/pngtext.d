@@ -8,33 +8,39 @@ import utils.baseconv;
 import std.math;
 import std.file;
 
+// constants
+
+/// Number of bytes per pixel (red, green, blue, & alpha = 4)
+const BYTES_PER_PIXEL = 4;
+/// Number of bytes taken by header
+const HEADER_BYTES = 12;
+/// Density for writing/reading header
+const HEADER_DENSITY = 2;
+
 /// reads a png as a stream of ubyte[4]
 /// no checks are present in here to see if pngFilename is valid or not
-/// Returns: array of ubyte[4], where [0] is read, [1] is blue, [2] is green, [3] is alpha
-private ubyte[4][] readAsStream(string pngFilename, ref uinteger width, ref uinteger height){
+/// Returns: array with values of rgba of all pixels one after another
+private ubyte[] readAsStream(string pngFilename, ref uinteger width, ref uinteger height){
 	MemoryImage pngMem = readPng(pngFilename);
-	ubyte[4][] r;
+	ubyte[] r;
 	height = pngMem.height;
 	width = pngMem.width;
-	r.length = height * width;
-	for (uinteger i = 0; i < r.length; i ++){
+	r.length = height * width * BYTES_PER_PIXEL;
+	for (uinteger i = 0, readTill = height * width; i < readTill; i ++){
 		Color pixel = pngMem.getPixel(cast(int)(i % width), cast(int)(i / width));
-		r[i][0] = pixel.r;
-		r[i][1] = pixel.g;
-		r[i][2] = pixel.b;
-		r[i][3] = pixel.a;
+		r[i*BYTES_PER_PIXEL .. (i+1)*BYTES_PER_PIXEL] = [pixel.r, pixel.g, pixel.b, pixel.a];
 	}
 	return r;
 }
 
 /// writes a png from a stream of ubyte[4] to a file
 /// no checks are present in here to see if pngFilename is valid or not
-private void savePngStream(ubyte[4][] stream, string pngFilename, uinteger width, uinteger height){
+private void savePngStream(ubyte[] stream, string pngFilename, uinteger width, uinteger height){
 	/// change to TrueColorImage
 	TrueColorImage pngMem = new TrueColorImage(cast(int)width, cast(int)height);
 	auto colorData = pngMem.imageData.colors;
-	foreach (i, col; stream){
-		colorData[i] = Color(col[0], col[1], col[2], col[3]);
+	for (uinteger i = 0; i < stream.length; i += BYTES_PER_PIXEL){
+		colorData[i/BYTES_PER_PIXEL] = Color(stream[i], stream[i+1], stream[i+2], stream[i+3]);
 	}
 	writePng(pngFilename, pngMem);
 }
@@ -46,8 +52,12 @@ public uinteger calculatePngCapacity(string pngFilename, ubyte density){
 	if (pixelCount <= 3){
 		return 0;
 	}
-	pixelCount -= 3;
-	return (pixelCount*4) / (8 / density);
+	return (pixelCount - 3)*density/2;
+}
+
+/// Returns: bytes required to hold data at a certain density
+private uinteger calculateBytesNeeded(uinteger dataLength, ubyte density){
+	return dataLength * 8 / density;
 }
 
 /// writes some data to a png image
@@ -60,7 +70,7 @@ public string[] writeDataToPng(string pngFilename, string outputFilename, string
 	}else if (density != 2 && density != 4 && density != 8){
 		errors ~= "density must be either 2, 4, or 8";
 	}else{
-		ubyte[4][] pngStream = readAsStream(pngFilename, width, height);
+		ubyte[] pngStream = readAsStream(pngFilename, width, height);
 		try{
 			pngStream = encodeDataToPngStream(pngStream,
 				cast(ubyte[])cast(char[])(data.dup),
@@ -84,52 +94,61 @@ public string readDataFromPng(string pngFilename, ubyte density){
 		throw new Exception ("file does not exist");
 	}
 	uinteger w, h;
-	ubyte[4][] pngStream = readAsStream(pngFilename, w, h);
+	ubyte[] pngStream = readAsStream(pngFilename, w, h);
 	return cast(string)cast(char[])extractDataFromPngStream(pngStream, density);
 }
 
 /// reads the header (data-length) from begining of png stream
-uinteger readHeader(ubyte[4][] stream){
-	ubyte[3] headerBytes;
-	ubyte[12] headerPixels = stream[0]~stream[1]~stream[2];
-	foreach (i, subPixel; headerPixels){
-		headerPixels[i] = subPixel.readLastBits(2);
+uinteger readHeader(ubyte[] stream){
+	ubyte[HEADER_BYTES / BYTES_PER_PIXEL] headerBytes;
+	ubyte[HEADER_BYTES] headerPixels;
+	foreach (i, b; stream[0 .. HEADER_BYTES]){
+		headerPixels[i] = b.readLastBits(HEADER_DENSITY);
 	}
-	foreach (i; [0, 4, 8]){
-		headerBytes[i / 4] = joinByte(headerPixels[i .. i + 4]);
+	ubyte bytesPerChar = 8 / HEADER_DENSITY;
+	for (uinteger i = 0; i < HEADER_BYTES; i += bytesPerChar){
+		headerBytes[i / bytesPerChar] = joinByte(headerPixels[i .. i + bytesPerChar]);
 	}
 	return charToDenary(cast(char[])headerBytes);
 }
 
 /// Returns: the header (first 3 pixels storing the data-length)
-ubyte[4][3] writeHeader(uint dataLength, ubyte[4][3] stream){
+ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
 	assert (dataLength <= pow (2, 24), "data-length must be less than 16 megabytes");
 	ubyte[] data = cast(ubyte[])(dataLength.denaryToChar());
 	ubyte[] rawData;
-	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
-		rawData ~= data[readFrom].splitByte(4);
+	ubyte bytesPerChar = 8/HEADER_DENSITY;
+	for (uinteger i = 0; i < data.length; i ++){
+		rawData ~= data[i].splitByte(bytesPerChar);
+	}
+	if (rawData.length < HEADER_BYTES){
+		ubyte[] newData;
+		newData.length = HEADER_BYTES;
+		newData[] = 0;
+		newData[HEADER_BYTES - rawData.length .. newData.length] = rawData;
+		rawData = newData;
 	}
 	stream = stream.dup;
 	for (uinteger i = 0; i < rawData.length; i ++){
-		stream[i/4][i % 4] = stream[i/4][i % 4].setLastBits(2, rawData[i]);
+		stream[i] = stream[i].setLastBits(HEADER_DENSITY, rawData[i]);
 	}
 	return stream;
 }
 
 /// extracts the stored data-stream from a png-stream
 /// Returns: the stream representing the data
-private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
+private ubyte[] extractDataFromPngStream(ubyte[] stream, ubyte density){
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
-	assert (stream.length >= 12, "image must have at least 3 pixels");
-	uinteger length = readHeader(stream[0 .. 3]);
+	assert (stream.length >= HEADER_BYTES, "image does not have enough pixels");
+	stream = stream.dup;
+	uinteger length = readHeader(stream[0 .. HEADER_BYTES]);
+	stream = stream[HEADER_BYTES .. stream.length];
 	/// stores the raw data extracted, this will be processed to remove the part storing the "image" and be "joined" to become 8-bit
 	ubyte[] rawData;
-	for (uinteger i = 3; i < length; i++){
-		ubyte[4] toAdd;
-		foreach (index, currentByte; stream[i+3]){
-			toAdd[index] = currentByte.readLastBits(density);
-		}
-		rawData ~= toAdd;
+	rawData.length = calculateBytesNeeded(length, density);
+	// extract the last few bits
+	for (uinteger i = 0; i < rawData.length; i++){
+		rawData[i] = stream[i].readLastBits(density);
 	}
 	/// number of bytes per actual data-storing-byte
 	ubyte bytesPerChar = 8/density;
@@ -137,55 +156,36 @@ private ubyte[] extractDataFromPngStream(ubyte[4][] stream, ubyte density){
 	rawData.length -= rawData.length % bytesPerChar;
 	// now join the bytes
 	ubyte[] data;
-	data.length = rawData.length / bytesPerChar;
-	for (uinteger readFrom = 0, writeTo = 0; readFrom < rawData.length; writeTo ++){
-		data[writeTo] = joinByte(rawData[readFrom .. readFrom + bytesPerChar]);
-		readFrom += bytesPerChar;
+	data.length = length;
+	for (uinteger i = 0; i < rawData.length; i += bytesPerChar){
+		data[i / bytesPerChar] = joinByte(rawData[i .. i + bytesPerChar]);
 	}
 	return data;
 }
 
-private ubyte[4][] encodeDataToPngStream(ubyte[4][] stream, ubyte[] data, ubyte density){
+private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data, ubyte density){
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
-	assert (stream.length >= 12, "image must have at least 3 pixels");
+	assert (stream.length >= HEADER_BYTES, "image does not have enough pixels");
 	// data can not be more than or equal to 2^(4*3*2) = 2^24 bytes
-	assert (data.length < pow(2, 24), "data must be less than 16 megabytes");
+	assert (data.length < pow(2, HEADER_BYTES * HEADER_DENSITY), "data length is too much to be stored in header");
 	// make sure it'll fit
-	uinteger pixelsNeeded = (data.length * 8) / (density * 4);
-	if (cast(float)(cast(float)data.length * 8f) / (cast(float)density * 4f) % 1 > 0){
-		pixelsNeeded += 1;
-	}
-	if (pixelsNeeded+3 > stream.length){
-		throw new Exception ("there aren't enough pixels to hold that data");
-	}
+	assert (calculateBytesNeeded(data.length, density) + HEADER_BYTES <= stream.length,
+		"image does not have enough pixels to hold that mcuh data");
 	stream = stream.dup;
 	// put the header into the data (header = stores the length of the data, excluding the header)
-	stream[0 .. 3] = writeHeader(cast(uint)data.length, stream[0 .. 3]);
-	// divide the data into bytes where only last n-bits are used where n = density
+	ubyte[HEADER_BYTES] headerStream = writeHeader(cast(uint)data.length, stream[0 .. HEADER_BYTES]);
+	stream = stream[HEADER_BYTES .. stream.length];
 	/// stores the data to be added to individual pixel
 	ubyte[] rawData;
+	// divide the data into bytes where only last n-bits are used where n = density
 	ubyte bytesPerChar = 8 / density;
-	for (uinteger readFrom = 0; readFrom < data.length; readFrom ++){
-		rawData ~= data[readFrom].splitByte(bytesPerChar);
+	for (uinteger i = 0; i < data.length; i ++){
+		rawData ~= data[i].splitByte(bytesPerChar);
 	}
-	for (uinteger i = 3, readFrom = 0; i < stream.length; i ++){
-		if (readFrom < rawData.length){
-			// put data in it
-			ubyte[4] rawDataToAdd = [0,0,0,0];
-			// read data to add into a separate array
-			if (readFrom+4 >= rawData.length){
-				rawDataToAdd[0 .. rawData.length - readFrom] = rawData[readFrom .. rawData.length];
-			}else{
-				rawDataToAdd = rawData[readFrom .. readFrom + rawDataToAdd.length];
-			}
-			// insert that data into the png stream
-			foreach (index, toAdd; rawDataToAdd){
-				stream[i][index] = stream[i][index].setLastBits(density,toAdd);
-			}
-			readFrom += 4;
-		}
+	for (uinteger i = 0; i < rawData.length; i ++){
+		stream[i] = stream[i].setLastBits(density, rawData[i]);
 	}
-	return stream;
+	return headerStream ~ stream;
 }
 
 /// stores a number in the last n-bits of a ubyte, the number must be less than 2^n
