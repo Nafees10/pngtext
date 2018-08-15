@@ -71,7 +71,11 @@ void main(string[] args){
 			}else if (command == "read"){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
-				string text = readDataFromPng(inputFile, density);
+				try{
+					string text = readDataFromPng(inputFile, density);
+				}catch (Exception e){
+					writeln ("Failed to read from png image:\n",e.msg);
+				}
 				if ("output" in options){
 					try{
 						File outputFile = File(options["output"], "w");
@@ -86,7 +90,11 @@ void main(string[] args){
 			}else if (command == "size"){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
-				writeln (calculatePngCapacity(inputFile, density));
+				try{
+					writeln (calculatePngCapacity(inputFile, density));
+				}catch (Exception e){
+					writeln ("Failed to read png image:\n",e.msg);
+				}
 			}
 		}
 	}else{
