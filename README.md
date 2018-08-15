@@ -48,7 +48,7 @@ To calculate exactly how many bytes a png image will be able to store, use the `
 This will write the number of bytes a png image can store to stdout.
 
 ### Specifying How Much Data to Store in Each Pixel
-pngtext allows you to specify how many bits are used from each pixel. The data is only stored in the bytes storing amount of green, blue, and alpha for each pixel. The byte storing red is not used to store data. For each of the bytes used, either 2, 4, or 8 bits can be used. the default is 2, as it affects the quality of the image the least.  
+pngtext allows you to specify how many bits are used from each pixel. Each pixel has 4 bytes, and from each of those bytes, a specific number of bits will be used to store the data. This number of bits is referred to as "density" in pngtext. The higher it is, the lower image quality will get, but capacity will increase. It can either be 1, 2, 4, or 8.  
 
 To specify how many bits are to be used, use the `--density` or `-d` option:  
 `pngtext write -i i.png -o o.png -t someText -d 4`  
