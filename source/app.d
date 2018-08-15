@@ -10,6 +10,9 @@ import pngtext;
 /// stores the version
 const VERSION = "0.0.9";
 
+/// stores the default density
+const DEFAULT_DENSITY = 1;
+
 // help text
 const string HELP_TEXT = "pngtext - stores data inside png images without affecting quality much
 usage:
@@ -23,7 +26,7 @@ options:
   --input -i      specify original png image to write to, or read from
   --ouput -o      specify file to write output to, for write, and read
   --text -t       specify text to write into png image
-  --density -d    specify how \"dense\" data will be stored in pixels. min and default is 2. It can be either 2, 4, or 8
+  --density -d    specify how \"dense\" data will be stored in pixels. min and default is 1. It can be either 1, 2, 4, or 8
   --version -v    display this program's version
   --help -h       display this message";
 
@@ -54,7 +57,7 @@ void main(string[] args){
 			if (command == "write"){
 				string inputFile = options["input"];
 				string outputFile = options["output"];
-				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
+				ubyte density = ("density" in options ? to!ubyte(options["density"]) : DEFAULT_DENSITY);
 				string text;
 				if ("text" in options){
 					text = options["text"];
@@ -70,7 +73,7 @@ void main(string[] args){
 				}
 			}else if (command == "read"){
 				string inputFile = options["input"];
-				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
+				ubyte density = ("density" in options ? to!ubyte(options["density"]) : DEFAULT_DENSITY);	
 				string text;
 				try{
 					text = readDataFromPng(inputFile, density);
@@ -90,7 +93,7 @@ void main(string[] args){
 				}
 			}else if (command == "size"){
 				string inputFile = options["input"];
-				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
+				ubyte density = ("density" in options ? to!ubyte(options["density"]) : DEFAULT_DENSITY);
 				try{
 					writeln (calculatePngCapacity(inputFile, density));
 				}catch (Exception e){
