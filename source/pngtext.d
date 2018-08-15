@@ -67,7 +67,7 @@ public string[] writeDataToPng(string pngFilename, string outputFilename, string
 	string[] errors = [];
 	if (!exists(pngFilename) || !isFile(pngFilename)){
 		errors ~= "file does not exist";
-	}else if (density != 2 && density != 4 && density != 8){
+	}else if (density != 1 && density != 2 && density != 4 && density != 8){
 		errors ~= "density must be either 2, 4, or 8";
 	}else{
 		ubyte[] pngStream = readAsStream(pngFilename, width, height);
@@ -87,8 +87,8 @@ public string[] writeDataToPng(string pngFilename, string outputFilename, string
 /// Returns: the data read in a string
 /// Throws: Exception in case of error
 public string readDataFromPng(string pngFilename, ubyte density){
-	if (density != 2 && density != 4 && density != 8){
-		throw new Exception ("density must be either 2, 4, or 8");
+	if (density != 1 && density != 2 && density != 4 && density != 8){
+		throw new Exception ("density must be either 1, 2, 4, or 8");
 	}
 	if (!exists(pngFilename) || !isFile(pngFilename)){
 		throw new Exception ("file does not exist");
@@ -237,7 +237,8 @@ unittest{
 /// split is the ubyte[] in which only the last n-bits from each byte stores the required number
 /// split.length must be either 2, 4, or 8
 private ubyte joinByte(ubyte[] split){
-	assert (split.length == 2 || split.length == 4 || split.length == 8, "split.length must be either 2, 4, or 8");
+	assert (split.length == 1 || split.length == 2 || split.length == 4 || split.length == 8,
+		"split.length must be either 1, 2, 4, or 8");
 	ubyte r = 0;
 	ubyte bitCount = 8 / split.length;
 	uint modBy = cast(uint)pow(2, bitCount);
