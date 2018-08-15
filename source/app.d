@@ -71,8 +71,9 @@ void main(string[] args){
 			}else if (command == "read"){
 				string inputFile = options["input"];
 				ubyte density = ("density" in options ? to!ubyte(options["density"]) : 2);
+				string text;
 				try{
-					string text = readDataFromPng(inputFile, density);
+					text = readDataFromPng(inputFile, density);
 				}catch (Exception e){
 					writeln ("Failed to read from png image:\n",e.msg);
 				}
@@ -185,8 +186,8 @@ string[] validateOptions(string[string] options, string command){
 		}
 	}
 	// now make sure the options are the correct data type
-	if ("density" in options && ["2", "4", "8"].indexOf(options["density"]) == -1){
-		errors ~= "--density can either be 2, 4, or 8";
+	if ("density" in options && !["1", "2", "4", "8"].hasElement(options["density"])){
+		errors ~= "--density can either be 1, 2, 4, or 8";
 	}
 	// check if provided files exist
 	string[] filesToCheck = [];
