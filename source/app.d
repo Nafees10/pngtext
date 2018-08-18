@@ -20,7 +20,7 @@ pngtext command [options]
 commands:
   write           write to a png file
   read            read data from a png file
-  size            calculate how many bytes a png image can store, use -d to specify density (default=2)
+  size            calculate how many bytes a png image can store, use -d to specify density (default=1)
 options:
   --file -f       specify file containing data to write into png image
   --input -i      specify original png image to write to, or read from
