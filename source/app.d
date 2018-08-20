@@ -8,7 +8,7 @@ import std.file;
 import pngtext;
 
 /// stores the version
-const VERSION = "0.0.9";
+const VERSION = "0.1.0";
 
 /// stores the default density
 const DEFAULT_DENSITY = 1;
@@ -20,13 +20,13 @@ pngtext command [options]
 commands:
   write           write to a png file
   read            read data from a png file
-  size            calculate how many bytes a png image can store, use -d to specify density (default=1)
+  size            calculate how many bytes a png image can store
 options:
   --file -f       specify file containing data to write into png image
   --input -i      specify original png image to write to, or read from
   --ouput -o      specify file to write output to, for write, and read
   --text -t       specify text to write into png image
-  --density -d    specify how \"dense\" data will be stored in pixels. min and default is 1. It can be either 1, 2, 4, or 8
+  --use-alpha -a  specify whether to use alpha (transparency) bytes using y or n, default is n
   --version -v    display this program's version
   --help -h       display this message";
 
@@ -57,14 +57,13 @@ void main(string[] args){
 			if (command == "write"){
 				string inputFile = options["input"];
 				string outputFile = options["output"];
-				ubyte density = ("density" in options ? to!ubyte(options["density"]) : DEFAULT_DENSITY);
 				string text;
 				if ("text" in options){
 					text = options["text"];
 				}else if ("file" in options){
 					text = cast(string)cast(char[])read(options["file"]);
 				}
-				errors = writeDataToPng(inputFile, outputFile, text, density);
+				errors = writeDataToPng(inputFile, outputFile, text);
 				foreach (error; errors){
 					writeln (error);
 				}
@@ -73,10 +72,9 @@ void main(string[] args){
 				}
 			}else if (command == "read"){
 				string inputFile = options["input"];
-				ubyte density = ("density" in options ? to!ubyte(options["density"]) : DEFAULT_DENSITY);	
 				string text;
 				try{
-					text = readDataFromPng(inputFile, density);
+					text = readDataFromPng(inputFile);
 				}catch (Exception e){
 					writeln ("Failed to read from png image:\n",e.msg);
 				}
@@ -93,9 +91,8 @@ void main(string[] args){
 				}
 			}else if (command == "size"){
 				string inputFile = options["input"];
-				ubyte density = ("density" in options ? to!ubyte(options["density"]) : DEFAULT_DENSITY);
 				try{
-					writeln (calculatePngCapacity(inputFile, density));
+					//writeln (calculatePngCapacity(inputFile)); TODO
 				}catch (Exception e){
 					writeln ("Failed to read png image:\n",e.msg);
 				}
@@ -113,7 +110,7 @@ void main(string[] args){
 string[string] readArgs(string[] args, ref string command, ref string[] errors){
 	/// stores list of possible options
 	string[] optionNames = [
-		"file", "text", "input", "output", "density"
+		"file", "text", "input", "output", "use-alpha"
 	];
 	/// returns option name from the option provided in arg
 	/// returns zero length string if invalid
@@ -124,7 +121,7 @@ string[string] readArgs(string[] args, ref string command, ref string[] errors){
 			"-t" : "text",
 			"-i" : "input",
 			"-o" : "output",
-			"-d" : "density",
+			"-a" : "use-alpha",
 		];
 		if (option.length >= 3 && option[0 .. 2] == "--"){
 			option = option[2 .. option.length];
@@ -189,8 +186,8 @@ string[] validateOptions(string[string] options, string command){
 		}
 	}
 	// now make sure the options are the correct data type
-	if ("density" in options && !["1", "2", "4", "8"].hasElement(options["density"])){
-		errors ~= "--density can either be 1, 2, 4, or 8";
+	if ("use-alpha" in options && !["y","n"].hasElement(options["ues-alpha"])){
+		errors ~= "--use-alpha can only be y or n";
 	}
 	// check if provided files exist
 	string[] filesToCheck = [];
