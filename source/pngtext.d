@@ -62,19 +62,16 @@ private uinteger calculateBytesNeeded(uinteger dataLength, ubyte density){
 
 /// writes some data to a png image
 /// Returns: [] if no errors occurred, or array of strings containing errors
-public string[] writeDataToPng(string pngFilename, string outputFilename, string data, ubyte density){
+public string[] writeDataToPng(string pngFilename, string outputFilename, string data){
 	uinteger width, height;
 	string[] errors = [];
 	if (!exists(pngFilename) || !isFile(pngFilename)){
 		errors ~= "file does not exist";
-	}else if (density != 1 && density != 2 && density != 4 && density != 8){
-		errors ~= "density must be either 2, 4, or 8";
 	}else{
 		ubyte[] pngStream = readAsStream(pngFilename, width, height);
 		try{
 			pngStream = encodeDataToPngStream(pngStream,
-				cast(ubyte[])cast(char[])(data.dup),
-				density);
+				cast(ubyte[])cast(char[])(data.dup));
 			savePngStream(pngStream, outputFilename, width, height);
 		}catch (Exception e){
 			errors ~= e.msg;
@@ -86,16 +83,13 @@ public string[] writeDataToPng(string pngFilename, string outputFilename, string
 /// reads some data from a png image
 /// Returns: the data read in a string
 /// Throws: Exception in case of error
-public string readDataFromPng(string pngFilename, ubyte density){
-	if (density != 1 && density != 2 && density != 4 && density != 8){
-		throw new Exception ("density must be either 1, 2, 4, or 8");
-	}
+public string readDataFromPng(string pngFilename){
 	if (!exists(pngFilename) || !isFile(pngFilename)){
 		throw new Exception ("file does not exist");
 	}
 	uinteger w, h;
 	ubyte[] pngStream = readAsStream(pngFilename, w, h);
-	return cast(string)cast(char[])extractDataFromPngStream(pngStream, density);
+	return cast(string)cast(char[])extractDataFromPngStream(pngStream);
 }
 
 /// reads the header (data-length) from begining of png stream
@@ -135,9 +129,52 @@ ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
 	return stream;
 }
 
+/// Returns: the optimum density (densities for a certain range), so all data can fit, while the highest quality is kept.
+/// 
+/// the return is assoc_array, where the index is the density, and the value at index is the length of bytes on which that density 
+/// should be applied
+/// 
+/// only works properly if the dataLength with density 8 can at least fit into the streamLength
+uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLength){
+	const ubyte[4] possibleDensities = [1,2,4,8];
+	uinteger[ubyte] r;
+	// look for the max density required. i.e, check (starting from lowest) each density, and see with which one the data fits in
+	ubyte maxDensity;
+	foreach (i, currentDensity; possibleDensities){
+		uinteger requiredLength = calculateBytesNeeded(dataLength, currentDensity);
+		if (requiredLength == streamLength){
+			// fits exactly, return just this
+			return [currentDensity : dataLength];
+		}else if (requiredLength < streamLength){
+			// some bytes are left, better decrease density and use thme too, 
+			maxDensity = currentDensity;
+			break;
+		}
+	}
+	// if at maxDensity, the data starts to fit, but some bytes are left, then the density before maxDensity could be used for some 
+	// bytes
+	ubyte minDensity = maxDensity == possibleDensities[0] ? maxDensity : possibleDensities[possibleDensities.indexOf(maxDensity)-1];
+	if (minDensity == maxDensity){
+		return [maxDensity : streamLength];
+	}
+	// now calculate how many bytes for maxDensity, how many for minDensity
+	uinteger minDensityBytesCount = 1;
+	for (; minDensityBytesCount < dataLength; minDensityBytesCount ++){
+		if (calculateBytesNeeded(minDensityBytesCount, minDensity) + calculateBytesNeeded(dataLength-minDensityBytesCount, maxDensity)
+			<= streamLength){
+				return [
+					minDensity : minDensityBytesCount,
+					maxDensity : dataLength-minDensityBytesCount
+				];
+		}
+	}
+	// if nothing worked till now, just give up and use the max density
+	return [maxDensity : dataLength];
+}
+
 /// extracts the stored data-stream from a png-stream
 /// Returns: the stream representing the data
-private ubyte[] extractDataFromPngStream(ubyte[] stream, ubyte density){
+private ubyte[] extractDataFromPngStream(ubyte[] stream){
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
 	assert (stream.length >= HEADER_BYTES, "image does not have enough pixels");
 	stream = stream.dup;
@@ -145,7 +182,8 @@ private ubyte[] extractDataFromPngStream(ubyte[] stream, ubyte density){
 	stream = stream[HEADER_BYTES .. stream.length];
 	/// stores the raw data extracted, this will be processed to remove the part storing the "image" and be "joined" to become 8-bit
 	ubyte[] rawData;
-	rawData.length = calculateBytesNeeded(length, density);
+	// calculate the required density
+	uinteger[ubyte] densities = calculateOptimumDensity(stream.length, length);
 	// extract the last few bits
 	for (uinteger i = 0; i < rawData.length; i++){
 		rawData[i] = stream[i].readLastBits(density);
@@ -202,6 +240,21 @@ unittest{
 	assert (cast(ubyte)(8).setLastBits(4,7) == 7);
 }
 
+/// stores numbers in the last n-bits of ubytes, each of the numbers must be less than 2^n
+private ubyte[] setLastBits(ubyte[] originalNumbers, ubyte n, ubyte[] toInsert){
+	assert (toInsert.length <= originalNumbers.length, "toInsert.length must be <= originalNumbers.length");
+	ubyte[] r;
+	r.length = toInsert.length;
+	for (uinteger i = 0; i < toInsert.length; i ++){
+		r[i] = setLastBits(originalNumbers[i], n, toInsert[i]);
+	}
+	return r;
+}
+/// 
+unittest{
+	assert ([255,3,2].setLastBits(2, [1,1,0]) == [254, 3, 0]);
+}
+
 /// reads and returns the number stored in last n-bits of a ubyte
 private ubyte readLastBits(ubyte orignalNumber, ubyte n){
 	return cast(ubyte)(orignalNumber % pow(2, n));
@@ -211,6 +264,28 @@ unittest{
 	assert (cast(ubyte)(255).readLastBits(2) == 3);
 	assert (cast(ubyte)(3).readLastBits(2) == 3);
 	assert (cast(ubyte)(9).readLastBits(3) == 1);
+}
+
+/// reads and returns the numbers stored in the last n-birs of ubytes
+private ubyte[] readLastBits(ubyte[] originalNumbers, ubyte n){
+	ubyte[] rawData;
+	rawData.length = originalNumbers.length;
+	for (uinteger i = 0; i < rawData.length; i++){
+		rawData[i] = originalNumbers[i].readLastBits(n);
+	}
+	// join them into single byte
+	ubyte bytesPerChar = 8/n;
+	rawData.length -= rawData.length % bytesPerChar;
+	ubyte[] data;
+	data.length = rawData.length/bytesPerChar;
+	for (uinteger i = 0; i < rawData.length; i += bytesPerChar){
+		data[i / bytesPerChar] = joinByte(rawData[i .. i + bytesPerChar]);
+	}
+	return data;
+}
+/// 
+unittest{
+	assert ([255,3,2].readLastBits(2) == [3,3,2]);
 }
 
 /// splits a number stored in ubyte into several bytes
