@@ -7,6 +7,9 @@ import utils.lists;
 import utils.baseconv;
 import std.math;
 import std.file;
+debug{
+	import std.stdio;
+}
 
 // constants
 
@@ -160,7 +163,9 @@ uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLeng
 	uinteger minDensityBytesCount = 1;
 	for (; minDensityBytesCount < dataLength; minDensityBytesCount ++){
 		if (calculateBytesNeeded(minDensityBytesCount, minDensity) + calculateBytesNeeded(dataLength-minDensityBytesCount, maxDensity)
-			<= streamLength){
+			> streamLength){
+				// the last value should work
+				minDensityBytesCount --;
 				return [
 					minDensity : minDensityBytesCount,
 					maxDensity : dataLength-minDensityBytesCount
@@ -185,8 +190,12 @@ private ubyte[] extractDataFromPngStream(ubyte[] stream){
 	ubyte[] data = [];
 	uinteger readFrom = 0; /// stores from where the next reading will start from
 	foreach (density, dLength; densities){
-		data = data ~ stream[readFrom .. readFrom + dLength].readLastBits(density);
-		readFrom += dLength;
+		debug{
+			writeln ("density: ", density, " dLength:", dLength);
+		}
+		ubyte bytesPerChar = 8 / density;
+		data = data ~ stream[readFrom .. readFrom + (dLength * bytesPerChar)].readLastBits(density);
+		readFrom += dLength * bytesPerChar;
 	}
 	return data;
 }
@@ -208,6 +217,9 @@ private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data){
 	uinteger readFromData = 0;
 	uinteger readFromStream = 0;
 	foreach (density, dLength; densities){
+		debug{
+			writeln ("density: ", density, " dLength:", dLength);
+		}
 		ubyte bytesPerChar = 8 / density;
 		// split it first
 		ubyte[] raw;
