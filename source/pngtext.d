@@ -137,7 +137,6 @@ ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
 /// only works properly if the dataLength with density 8 can at least fit into the streamLength
 uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLength){
 	const ubyte[4] possibleDensities = [1,2,4,8];
-	uinteger[ubyte] r;
 	// look for the max density required. i.e, check (starting from lowest) each density, and see with which one the data fits in
 	ubyte maxDensity;
 	foreach (i, currentDensity; possibleDensities){
@@ -155,7 +154,7 @@ uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLeng
 	// bytes
 	ubyte minDensity = maxDensity == possibleDensities[0] ? maxDensity : possibleDensities[possibleDensities.indexOf(maxDensity)-1];
 	if (minDensity == maxDensity){
-		return [maxDensity : streamLength];
+		return [maxDensity : dataLength];
 	}
 	// now calculate how many bytes for maxDensity, how many for minDensity
 	uinteger minDensityBytesCount = 1;
@@ -180,48 +179,47 @@ private ubyte[] extractDataFromPngStream(ubyte[] stream){
 	stream = stream.dup;
 	uinteger length = readHeader(stream[0 .. HEADER_BYTES]);
 	stream = stream[HEADER_BYTES .. stream.length];
-	/// stores the raw data extracted, this will be processed to remove the part storing the "image" and be "joined" to become 8-bit
-	ubyte[] rawData;
 	// calculate the required density
 	uinteger[ubyte] densities = calculateOptimumDensity(stream.length, length);
-	// extract the last few bits
-	for (uinteger i = 0; i < rawData.length; i++){
-		rawData[i] = stream[i].readLastBits(density);
-	}
-	/// number of bytes per actual data-storing-byte
-	ubyte bytesPerChar = 8/density;
-	// if there's some "extra bytes", remove those, becauese n(bytes) MOD (8/density) must equal 0
-	rawData.length -= rawData.length % bytesPerChar;
-	// now join the bytes
-	ubyte[] data;
-	data.length = length;
-	for (uinteger i = 0; i < rawData.length; i += bytesPerChar){
-		data[i / bytesPerChar] = joinByte(rawData[i .. i + bytesPerChar]);
+	// extract the data
+	ubyte[] data = [];
+	uinteger readFrom = 0; /// stores from where the next reading will start from
+	foreach (density, dLength; densities){
+		data = data ~ stream[readFrom .. readFrom + dLength].readLastBits(density);
+		readFrom += dLength;
 	}
 	return data;
 }
 
-private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data, ubyte density){
+private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data){
 	// stream.length must be at least 3 pixels, i.e stream.length == 3*4
 	assert (stream.length >= HEADER_BYTES, "image does not have enough pixels");
 	// data can not be more than or equal to 2^(4*3*2) = 2^24 bytes
 	assert (data.length < pow(2, HEADER_BYTES * HEADER_DENSITY), "data length is too much to be stored in header");
-	// make sure it'll fit
-	assert (calculateBytesNeeded(data.length, density) + HEADER_BYTES <= stream.length,
+	// make sure it'll fit, using the max density
+	assert (calculateBytesNeeded(data.length, 8) + HEADER_BYTES <= stream.length,
 		"image does not have enough pixels to hold that mcuh data");
 	stream = stream.dup;
 	// put the header into the data (header = stores the length of the data, excluding the header)
 	ubyte[HEADER_BYTES] headerStream = writeHeader(cast(uint)data.length, stream[0 .. HEADER_BYTES]);
 	stream = stream[HEADER_BYTES .. stream.length];
-	/// stores the data to be added to individual pixel
-	ubyte[] rawData;
-	// divide the data into bytes where only last n-bits are used where n = density
-	ubyte bytesPerChar = 8 / density;
-	for (uinteger i = 0; i < data.length; i ++){
-		rawData ~= data[i].splitByte(bytesPerChar);
-	}
-	for (uinteger i = 0; i < rawData.length; i ++){
-		stream[i] = stream[i].setLastBits(density, rawData[i]);
+	// now deal with the data
+	uinteger[ubyte] densities = calculateOptimumDensity(stream.length, data.length);
+	uinteger readFromData = 0;
+	uinteger readFromStream = 0;
+	foreach (density, dLength; densities){
+		ubyte bytesPerChar = 8 / density;
+		// split it first
+		ubyte[] raw;
+		raw = [];
+		for (uinteger i = 0; i < dLength; i ++){
+			raw = raw ~ splitByte(data[readFromData + i], bytesPerChar);
+		}
+		readFromData += dLength;
+		// now merge it into the stream
+		stream[readFromStream .. readFromStream + (dLength * bytesPerChar)] = 
+			stream[readFromStream .. readFromStream + (dLength * bytesPerChar)].setLastBits(density, raw);
+		readFromStream += dLength * bytesPerChar;
 	}
 	return headerStream ~ stream;
 }
@@ -266,7 +264,8 @@ unittest{
 	assert (cast(ubyte)(9).readLastBits(3) == 1);
 }
 
-/// reads and returns the numbers stored in the last n-birs of ubytes
+/// reads and returns the numbers stored in the last n-birs of ubytes. It also joins the numbers so instead of n-bit numbers, they
+/// are 8 bit numbers
 private ubyte[] readLastBits(ubyte[] originalNumbers, ubyte n){
 	ubyte[] rawData;
 	rawData.length = originalNumbers.length;
