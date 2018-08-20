@@ -7,9 +7,6 @@ import utils.lists;
 import utils.baseconv;
 import std.math;
 import std.file;
-debug{
-	import std.stdio;
-}
 
 // constants
 
@@ -190,9 +187,6 @@ private ubyte[] extractDataFromPngStream(ubyte[] stream){
 	ubyte[] data = [];
 	uinteger readFrom = 0; /// stores from where the next reading will start from
 	foreach (density, dLength; densities){
-		debug{
-			writeln ("density: ", density, " dLength:", dLength);
-		}
 		ubyte bytesPerChar = 8 / density;
 		data = data ~ stream[readFrom .. readFrom + (dLength * bytesPerChar)].readLastBits(density);
 		readFrom += dLength * bytesPerChar;
@@ -217,9 +211,6 @@ private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data){
 	uinteger readFromData = 0;
 	uinteger readFromStream = 0;
 	foreach (density, dLength; densities){
-		debug{
-			writeln ("density: ", density, " dLength:", dLength);
-		}
 		ubyte bytesPerChar = 8 / density;
 		// split it first
 		ubyte[] raw;
@@ -227,12 +218,10 @@ private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data){
 		for (uinteger i = 0; i < dLength; i ++){
 			raw[i*bytesPerChar .. (i+1)*bytesPerChar] = splitByte(data[readFromData + i], bytesPerChar);
 		}
-		debug{writeln ("splitting done");}
 		readFromData += dLength;
 		// now merge it into the stream
 		stream[readFromStream .. readFromStream + (dLength * bytesPerChar)] = 
 			stream[readFromStream .. readFromStream + (dLength * bytesPerChar)].setLastBits(density, raw);
-		debug{writeln ("merging done");}
 		readFromStream += dLength * bytesPerChar;
 	}
 	return headerStream ~ stream;
