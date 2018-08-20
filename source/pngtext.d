@@ -223,14 +223,16 @@ private ubyte[] encodeDataToPngStream(ubyte[] stream, ubyte[] data){
 		ubyte bytesPerChar = 8 / density;
 		// split it first
 		ubyte[] raw;
-		raw = [];
+		raw.length = dLength * bytesPerChar;
 		for (uinteger i = 0; i < dLength; i ++){
-			raw = raw ~ splitByte(data[readFromData + i], bytesPerChar);
+			raw[i*bytesPerChar .. (i+1)*bytesPerChar] = splitByte(data[readFromData + i], bytesPerChar);
 		}
+		debug{writeln ("splitting done");}
 		readFromData += dLength;
 		// now merge it into the stream
 		stream[readFromStream .. readFromStream + (dLength * bytesPerChar)] = 
 			stream[readFromStream .. readFromStream + (dLength * bytesPerChar)].setLastBits(density, raw);
+		debug{writeln ("merging done");}
 		readFromStream += dLength * bytesPerChar;
 	}
 	return headerStream ~ stream;
