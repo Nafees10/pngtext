@@ -91,10 +91,19 @@ void main(string[] args){
 				}
 			}else if (command == "size"){
 				string inputFile = options["input"];
-				try{
-					//writeln (calculatePngCapacity(inputFile)); TODO
-				}catch (Exception e){
-					writeln ("Failed to read png image:\n",e.msg);
+				// get the quality
+				writeln ("Select a quality:\n"," [1] Highest\n [2] High\n [3] Low\n [4] Poor:");
+				string quality = readln;
+				quality.length --;
+				if (["1","2","3","4"].hasElement(quality)){
+					try{
+						writeln (calculatePngCapacity(inputFile, quality=="1"?1 : (quality == "2" ? 2 : (quality == "3" ? 4 : 8))));
+					}catch (Exception e){
+						writeln ("Failed to read png image:\n",e.msg);
+					}
+				}else{
+					writeln ("Invalid selection");
+					exit (1);
 				}
 			}
 		}
