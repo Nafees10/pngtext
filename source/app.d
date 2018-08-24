@@ -26,7 +26,6 @@ options:
   --input -i      specify original png image to write to, or read from
   --ouput -o      specify file to write output to, for write, and read
   --text -t       specify text to write into png image
-  --use-alpha -a  specify whether to use alpha (transparency) bytes using y or n, default is n
   --version -v    display this program's version
   --help -h       display this message";
 
@@ -92,7 +91,7 @@ void main(string[] args){
 			}else if (command == "size"){
 				string inputFile = options["input"];
 				// get the quality
-				writeln ("Select a quality:\n"," [1] Highest\n [2] High\n [3] Low\n [4] Poor:");
+				writeln ("Select an image quality:\n"," [1] Highest\n [2] High\n [3] Low\n [4] Zero quality:");
 				string quality = readln;
 				quality.length --;
 				if (["1","2","3","4"].hasElement(quality)){
