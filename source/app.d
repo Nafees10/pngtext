@@ -18,14 +18,13 @@ const string HELP_TEXT = "pngtext - stores data inside png images without affect
 usage:
 pngtext command [options]
 commands:
-  write           write to a png file
+  write           write to a png file, to use stdin to input data, use without --file
   read            read data from a png file
   size            calculate how many bytes a png image can store
 options:
   --file -f       specify file containing data to write into png image
   --input -i      specify original png image to write to, or read from
   --ouput -o      specify file to write output to, for write, and read
-  --text -t       specify text to write into png image
   --version -v    display this program's version
   --help -h       display this message";
 
@@ -57,10 +56,11 @@ void main(string[] args){
 				string inputFile = options["input"];
 				string outputFile = options["output"];
 				string text;
-				if ("text" in options){
-					text = options["text"];
-				}else if ("file" in options){
+				if ("file" in options){
 					text = cast(string)cast(char[])read(options["file"]);
+				}else{
+					writeln ("Enter text to write:");
+					text = readln(cast(char)4);
 				}
 				errors = writeDataToPng(inputFile, outputFile, text);
 				foreach (error; errors){
@@ -86,7 +86,7 @@ void main(string[] args){
 						writeln ("Failed to write to output file:\n",e.msg);
 					}
 				}else{
-					write (text);
+					writeln (text);
 				}
 			}else if (command == "size"){
 				string inputFile = options["input"];
@@ -118,7 +118,7 @@ void main(string[] args){
 string[string] readArgs(string[] args, ref string command, ref string[] errors){
 	/// stores list of possible options
 	string[] optionNames = [
-		"file", "text", "input", "output", "use-alpha"
+		"file", "input", "output"
 	];
 	/// returns option name from the option provided in arg
 	/// returns zero length string if invalid
@@ -126,10 +126,8 @@ string[string] readArgs(string[] args, ref string command, ref string[] errors){
 		/// stores full option names for short names
 		const string[string] completeOptionNames = [
 			"-f" : "file",
-			"-t" : "text",
 			"-i" : "input",
-			"-o" : "output",
-			"-a" : "use-alpha",
+			"-o" : "output"
 		];
 		if (option.length >= 3 && option[0 .. 2] == "--"){
 			option = option[2 .. option.length];
@@ -185,17 +183,10 @@ string[] validateOptions(string[string] options, string command){
 				errors ~= "--"~option~" not specified";
 			}
 		}
-		if ("file" !in options && "text" !in options){
-			errors ~= "no --file or --text specified";
-		}
 	}else if (command == "read" || command == "size"){
 		if ("input" !in options){
 			errors ~= "--input not specified";
 		}
-	}
-	// now make sure the options are the correct data type
-	if ("use-alpha" in options && !["y","n"].hasElement(options["ues-alpha"])){
-		errors ~= "--use-alpha can only be y or n";
 	}
 	// check if provided files exist
 	string[] filesToCheck = [];
