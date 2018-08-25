@@ -29,29 +29,23 @@ To run the unittests on pngtext, first `cd` into the directory containing pngtex
 This describes how to use pngtext.
 
 ### Writing Data to PNG Image
-Use the `write` command to write data or text to a png image:  
+Use the `write` command to write data or text to a png image.  
+
+The following command will read 
+data from stdin and encode it in `pngFile.png`, and write resulting image to `outputPngFile.png`:  
 `pngtext write -i pngFile.png -o outputPngFile.png [other options]`  
-To write small amount of plain text, use the `--text` or `-t` option:  
-`pngtext write -i pngFile.png -o outputPngFile.png -t "text to write"`  
-To write non-plain-text data, or large amount of text, from file, use the `--file` or `-f` option:  
+
+To write data from a file, use the `--file` or `-f` option:  
 `pngtext write -i pngFile.png -o outputPngFile.png -f fileContainingData`  
 
 ### Reading Data from PNG Image:
 To read data, that was written using pngtext, use the `read` command:  
 `pngtext read -i pngFile.png`  
+
 To read the stored data into a file, use the `--output` or `-o` option to specify the output file:  
 `pngtext read -i pngFile.png -o outputDataFile`
 
 ### Calculating Maximum Data Capacity from PNG Image:
 To calculate exactly how many bytes a png image will be able to store, use the `size` command:  
 `pngtext size -i pngFile.png`  
-This will write the number of bytes a png image can store to stdout.
-
-### Specifying How Much Data to Store in Each Pixel
-pngtext allows you to specify how many bits are used from each pixel. Each pixel has 4 bytes, and from each of those bytes, a specific number of bits will be used to store the data. This number of bits is referred to as "density" in pngtext. The higher it is, the lower image quality will get, but capacity will increase. It can either be 1, 2, 4, or 8, and the default is 1.  
-
-To specify how many bits are to be used, use the `--density` or `-d` option:  
-`pngtext write -i i.png -o o.png -t someText -d 4`  
-`pngtext read -i o.png -d 4`  
-`pngtext size -i i.png -d 4`  
-One thing to keep in mind regarding `-d` option is that if `pngtext write` if used with `-d 4`, then `pngtext read` must also be used with the same number.
+After asking about the quality of resulting image, it will write the number of bytes `pngFile.png` can hold if all pixels are used.
