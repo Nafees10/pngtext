@@ -59,8 +59,8 @@ void main(string[] args){
 				if ("file" in options){
 					text = cast(string)cast(char[])read(options["file"]);
 				}else{
-					writeln ("Enter text to write:");
-					text = readln(cast(char)4);
+					writeln ("Enter text to write (Ctrl+D to terminate):");
+					text = readln(0x04);
 				}
 				errors = writeDataToPng(inputFile, outputFile, text);
 				foreach (error; errors){
