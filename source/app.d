@@ -60,7 +60,12 @@ void main(string[] args){
 					text = cast(string)cast(char[])read(options["file"]);
 				}else{
 					writeln ("Enter text to write (Ctrl+D to terminate):");
-					text = readln(0x04);
+					text = "";
+					while (!stdin.eof){
+						char c;
+						readf ("%s", c);
+						text ~= c;
+					}
 				}
 				errors = writeDataToPng(inputFile, outputFile, text);
 				foreach (error; errors){
