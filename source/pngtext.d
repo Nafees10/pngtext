@@ -7,6 +7,7 @@ import utils.lists;
 import utils.baseconv;
 import std.math;
 import std.file;
+debug{import std.stdio;}
 
 // constants
 
@@ -138,7 +139,7 @@ ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
 uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLength){
 	const ubyte[4] possibleDensities = [1,2,4,8];
 	// look for the max density required. i.e, check (starting from lowest) each density, and see with which one the data fits in
-	ubyte maxDensity;
+	ubyte maxDensity = 1;
 	foreach (i, currentDensity; possibleDensities){
 		uinteger requiredLength = calculateBytesNeeded(dataLength, currentDensity);
 		if (requiredLength == streamLength){
@@ -188,8 +189,14 @@ private ubyte[] extractDataFromPngStream(ubyte[] stream){
 	uinteger readFrom = 0; /// stores from where the next reading will start from
 	foreach (density, dLength; densities){
 		ubyte bytesPerChar = 8 / density;
-		data = data ~ stream[readFrom .. readFrom + (dLength * bytesPerChar)].readLastBits(density);
-		readFrom += dLength * bytesPerChar;
+		uinteger readTill = readFrom + (dLength * bytesPerChar);
+		// make sure it does not exceed the stream
+		if (readTill >= stream.length){
+			// return what was read
+			return data;
+		}
+		data = data ~ stream[readFrom .. readTill].readLastBits(density);
+		readFrom = readTill;
 	}
 	return data;
 }
