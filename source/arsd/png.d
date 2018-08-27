@@ -471,7 +471,7 @@ void writeImageToPngFile(in char[] filename, TrueColorImage image) {
 		fputc((c.checksum & 0x000000ff) >> 0, fp);
 	}
 	
-	delete com; // there is a reference to this in the PNG struct, but it is going out of scope here too, so who cares
+	.destroy (com); // there is a reference to this in the PNG struct, but it is going out of scope here too, so who cares
 	// just wanna make sure this crap doesn't stick around
 }
 
