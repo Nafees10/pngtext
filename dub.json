@@ -14,7 +14,8 @@
 		{
 			"name": "default",
 			"targetType": "executable",
-			"targetName": "pngtext"
+			"targetName": "pngtext",
+			"versions" : ["cli"]
 		},
 		{
 			"name": "gtk",
