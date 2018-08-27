@@ -4,9 +4,23 @@
 		"Nafees"
 	],
 	"dependencies": {
-		"utils": "~>0.2.0"
+		"utils": "~>0.2.0",
+		"gtk-d": "~>3.8.3"
 	},
 	"description": "Stores plain text in PNG images without decreasing image quality that much",
 	"copyright": "Copyright © 2018, Nafees",
-	"license": "MIT"
+	"license": "MIT",
+	"configurations": [
+		{
+			"name": "default",
+			"targetType": "executable",
+			"targetName": "pngtext"
+		},
+		{
+			"name": "gtk",
+			"targetType": "executable",
+			"targetName": "pngtext-gtk",
+			"versions": ["gtk"]
+		},
+	],
 }
