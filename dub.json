@@ -19,7 +19,6 @@
 		{
 			"name": "so",
 			"targetType": "dynamicLibrary",
-			"targetName": "pngtext.so",
 			"versions": ["lib"]
 		},
 	],
