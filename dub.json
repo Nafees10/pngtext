@@ -4,8 +4,7 @@
 		"Nafees"
 	],
 	"dependencies": {
-		"utils": "~>0.2.0",
-		"gtk-d": "~>3.8.3"
+		"utils": "~>0.2.0"
 	},
 	"description": "Stores plain text in PNG images without decreasing image quality that much",
 	"copyright": "Copyright © 2018, Nafees",
@@ -18,10 +17,10 @@
 			"versions" : ["cli"]
 		},
 		{
-			"name": "gtk",
-			"targetType": "executable",
-			"targetName": "pngtext-gtk",
-			"versions": ["gtk"]
+			"name": "so",
+			"targetType": "dynamicLibrary",
+			"targetName": "pngtext.so",
+			"versions": ["lib"]
 		},
 	],
 }
