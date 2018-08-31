@@ -93,7 +93,7 @@ public ubyte[] readDataFromPng(string pngFilename){
 }
 
 /// reads the header (data-length) from begining of png stream
-uinteger readHeader(ubyte[] stream){
+private uinteger readHeader(ubyte[] stream){
 	ubyte[HEADER_BYTES / BYTES_PER_PIXEL] headerBytes;
 	ubyte[HEADER_BYTES] headerPixels;
 	foreach (i, b; stream[0 .. HEADER_BYTES]){
@@ -107,7 +107,7 @@ uinteger readHeader(ubyte[] stream){
 }
 
 /// Returns: the header (first 3 pixels storing the data-length)
-ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
+private ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
 	assert (dataLength <= pow (2, 24), "data-length must be less than 16 megabytes");
 	ubyte[] data = cast(ubyte[])(dataLength.denaryToChar());
 	ubyte[] rawData;
