@@ -63,7 +63,7 @@ private uinteger calculateBytesNeeded(uinteger dataLength, ubyte density){
 
 /// writes some data to a png image
 /// Returns: [] if no errors occurred, or array of strings containing errors
-public string[] writeDataToPng(string pngFilename, string outputFilename, string data){
+public string[] writeDataToPng(string pngFilename, string outputFilename, ubyte[] data){
 	uinteger width, height;
 	string[] errors = [];
 	if (!exists(pngFilename) || !isFile(pngFilename)){
@@ -71,8 +71,7 @@ public string[] writeDataToPng(string pngFilename, string outputFilename, string
 	}else{
 		ubyte[] pngStream = readAsStream(pngFilename, width, height);
 		try{
-			pngStream = encodeDataToPngStream(pngStream,
-				cast(ubyte[])cast(char[])(data.dup));
+			pngStream = encodeDataToPngStream(pngStream, data.dup);
 			savePngStream(pngStream, outputFilename, width, height);
 		}catch (Exception e){
 			errors ~= e.msg;
@@ -84,13 +83,13 @@ public string[] writeDataToPng(string pngFilename, string outputFilename, string
 /// reads some data from a png image
 /// Returns: the data read in a string
 /// Throws: Exception in case of error
-public string readDataFromPng(string pngFilename){
+public ubyte[] readDataFromPng(string pngFilename){
 	if (!exists(pngFilename) || !isFile(pngFilename)){
 		throw new Exception ("file does not exist");
 	}
 	uinteger w, h;
 	ubyte[] pngStream = readAsStream(pngFilename, w, h);
-	return cast(string)cast(char[])extractDataFromPngStream(pngStream);
+	return extractDataFromPngStream(pngStream);
 }
 
 /// reads the header (data-length) from begining of png stream
@@ -136,7 +135,7 @@ ubyte[HEADER_BYTES] writeHeader(uint dataLength, ubyte[HEADER_BYTES] stream){
 /// should be applied
 /// 
 /// only works properly if the dataLength with density 8 can at least fit into the streamLength
-uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLength){
+private uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger dataLength){
 	const ubyte[4] possibleDensities = [1,2,4,8];
 	// look for the max density required. i.e, check (starting from lowest) each density, and see with which one the data fits in
 	ubyte maxDensity = 1;

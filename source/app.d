@@ -68,7 +68,7 @@ version (cli){
 							text ~= c;
 						}
 					}
-					errors = writeDataToPng(inputFile, outputFile, text);
+					errors = writeDataToPng(inputFile, outputFile, cast(ubyte[])cast(char[])text);
 					foreach (error; errors){
 						writeln (error);
 					}
@@ -77,7 +77,7 @@ version (cli){
 					}
 				}else if (command == "read"){
 					string inputFile = options["input"];
-					string text;
+					ubyte[] text;
 					try{
 						text = readDataFromPng(inputFile);
 					}catch (Exception e){
@@ -92,7 +92,7 @@ version (cli){
 							writeln ("Failed to write to output file:\n",e.msg);
 						}
 					}else{
-						writeln (text);
+						writeln (cast(string)cast(char[])text);
 					}
 				}else if (command == "size"){
 					string inputFile = options["input"];
