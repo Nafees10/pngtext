@@ -173,6 +173,13 @@ private uinteger[ubyte] calculateOptimumDensity(uinteger streamLength, uinteger 
 	return [maxDensity : dataLength];
 }
 
+/// ditto
+public uinteger[ubyte] calculateOptimumDensity(string filename, uinteger dataLength){
+	MemoryImage memPng = readPng(filename);
+	uinteger streamLength = (memPng.width * memPng.height * BYTES_PER_PIXEL) - (HEADER_BYTES / BYTES_PER_PIXEL);
+	return calculateOptimumDensity(streamLength,dataLength);
+}
+
 /// extracts the stored data-stream from a png-stream
 /// Returns: the stream representing the data
 private ubyte[] extractDataFromPngStream(ubyte[] stream){
