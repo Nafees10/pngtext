@@ -19,7 +19,7 @@ version(lib){
 
 	/// returns the number of bytes that can be stored
 	extern (C) uint pngCapacity(char* filename, ubyte density){
-		return calculatePngCapacity (cast(string)fromStringz(filename), desnity);
+		return cast(uint)calculatePngCapacity (cast(string)fromStringz(filename), density);
 	}
 
 	/// returns a float number, which tells the quality of the output image
