@@ -81,6 +81,7 @@ version(lib){
 			numerator += index * value;
 			denominator += value;
 		}
-		return (cast(float)numerator) / (cast(float)denominator);
+		return (cast(float)numerator*8) / (cast(float)denominator*8);
+		
 	}
 }
