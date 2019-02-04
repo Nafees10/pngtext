@@ -86,7 +86,7 @@ version (cli){
 					if ("output" in options){
 						try{
 							File outputFile = File(options["output"], "w");
-							outputFile.write(text);
+							outputFile.write(cast(char[])text);
 							outputFile.close();
 						}catch (Exception e){
 							writeln ("Failed to write to output file:\n",e.msg);
