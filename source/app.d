@@ -9,7 +9,7 @@ version (cli){
 	import pngtext;
 
 	/// stores the version
-	const VERSION = "0.1.0";
+	const VERSION = "0.1.1";
 
 	/// stores the default density
 	const DEFAULT_DENSITY = 1;
