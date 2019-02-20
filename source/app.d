@@ -6,7 +6,11 @@ version (app){
 	import core.stdc.stdlib;
 	import utils.misc;
 	import std.file;
-	import pngtext;
+	import pngtext.pngtext;
+	// QUI for the text editor
+	import qui.qui;
+	import qui.widgets;
+	import editor;
 
 	/// stores the version
 	const VERSION = "0.2.0";
@@ -112,10 +116,20 @@ options:
 						writeln ("Invalid selection");
 						exit (1);
 					}
+				}else if (command == "editor"){
+					// if no output specified, use readOnly=true
+					Editor editorInstance;
+					if ("output" in options)
+						editorInstance = new Editor(options["input"], options["output"], false);
+					else
+						editorInstance = new Editor(options["input"], "", true);
+					editorInstance.run();
+					.destroy(editorInstance);
 				}
 			}
 		}else{
-			writeln("usage:\npngtext command [options]");
+			writeln("usage:\n pngtext [command] [options]");
+			writeln("or enter following for help:\n pngtext --help");
 		}
 	}
 
@@ -123,7 +137,7 @@ options:
 	/// `args` is the array containing arguments. arg0 (executable name) should not be included in this
 	/// `command` is the string in which the provided command will be "returned"
 	/// `errors` is the array to put any errors in
-	string[string] readArgs(string[] args, ref string command, ref string[] errors){
+	private string[string] readArgs(string[] args, ref string command, ref string[] errors){
 		/// stores list of possible options
 		string[] optionNames = [
 			"file", "input", "output"
@@ -151,7 +165,7 @@ options:
 		if (args.length == 0){
 			errors ~= "no arguments provided";
 		}
-		if (["read","write","size"].indexOf(args[0]) == -1){
+		if (["read","write","size","editor"].indexOf(args[0]) == -1){
 			errors ~= "invalid command provided";
 		}else{
 			command = args[0];
@@ -182,7 +196,7 @@ options:
 
 	/// validates if all the values provided for options are correct
 	/// Returns: array containing errors, [] if no errors found
-	string[] validateOptions(string[string] options, string command){
+	private string[] validateOptions(string[string] options, string command){
 		// assume that only correct options were passed, no "option does not exist" checks are here
 		string[] errors = [];
 		if (command == "write"){
@@ -192,6 +206,10 @@ options:
 				}
 			}
 		}else if (command == "read" || command == "size"){
+			if ("input" !in options){
+				errors ~= "--input not specified";
+			}
+		}else if (command == "editor"){
 			if ("input" !in options){
 				errors ~= "--input not specified";
 			}
