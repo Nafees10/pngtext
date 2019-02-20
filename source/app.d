@@ -1,6 +1,6 @@
 module app;
 
-version (cli){
+version (app){
 	import std.stdio;
 	import std.conv : to;
 	import core.stdc.stdlib;
@@ -9,25 +9,27 @@ version (cli){
 	import pngtext;
 
 	/// stores the version
-	const VERSION = "0.1.1";
+	const VERSION = "0.2.0";
 
 	/// stores the default density
 	const DEFAULT_DENSITY = 1;
 
 	// help text
-	const string HELP_TEXT = "pngtext - stores data inside png images without affecting quality much
-	usage:
-	pngtext command [options]
-	commands:
-	  write           write to a png file, to use stdin to input data, use without --file
-	  read            read data from a png file
-	  size            calculate how many bytes a png image can store
-	options:
-	  --file -f       specify file containing data to write into png image
-	  --input -i      specify original png image to write to, or read from
-	  --ouput -o      specify file to write output to, for write, and read
-	  --version -v    display this program's version
-	  --help -h       display this message";
+	const string HELP_TEXT = "pngtext - hides data inside png images
+usage:
+pngtext [command] [options]
+commands:
+ write         write to a png file, if --file is not specified, stdin is used to
+               input data
+ read          read data from a png file
+ size          calculate how many bytes a png image can store.
+ editor        opens a text editor in terminal to edit hidden text.
+options:
+ --file -f     specify file containing data to write into png image
+ --input -i    specify original png image to write to, or read from
+ --ouput -o    specify file to write output to, for write, and read
+ --version -v  display this program's version
+ --help -h     display this message";
 
 	void main(string[] args){
 		if (args.length >= 2){

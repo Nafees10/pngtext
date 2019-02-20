@@ -1,3 +1,6 @@
+/++
+Contains the functions to read/write to hidden data in png files.
++/
 module pngtext;
 
 import arsd.png;
