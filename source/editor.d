@@ -20,8 +20,6 @@ private:
 	TextLabelWidget _shortcutLabel;
 	/// Contains the _statusLabel and _shortcutLabel
 	QLayout _statusBar;
-	/// just used to catch the shortcut keys
-	KeyCatcher _keyCatch;
 	/// filename of original png
 	string _inputPng;
 	/// filename of output png
@@ -49,11 +47,10 @@ public:
 		_statusBar = new QLayout(QLayout.Type.Horizontal);
 		_editor = new MemoWidget(!readOnly);
 		_statusLabel = new TextLabelWidget();
-		_keyCatch = new KeyCatcher([Key.ctrlS, Key.ctrlR]);
 		// set up each widget
 		// first comes the editor:
 		_editor.wantsTab = false;
-		_editor.lines.loadArray(separateLines(readDataFromPng(_inputPng)));//load the lines
+		_editor.lines.loadArray(separateLines(cast(char[])readDataFromPng(_inputPng)));//load the lines
 		// now comes the _statusLabel
 		// invert the colors
 		_statusLabel.textColor = DEFAULT_BG;
