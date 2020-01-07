@@ -20,7 +20,7 @@ Run these commands to build pngtext:
 
 ```bash
 dub fetch pngtext
-dub build pngtext -c=app
+dub build pngtext -c=app -b=release
 ```
 
 If the build is succesful, the built binary will be in `~/.dub/packages/pngtext-*/pngtext/`  
