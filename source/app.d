@@ -10,7 +10,7 @@ version (app){
 	// QUI for the text editor
 	import qui.qui;
 	import qui.widgets;
-	import editor;
+	import editor : Editor;
 
 	/// stores the version
 	const VERSION = "0.2.0";
@@ -18,20 +18,23 @@ version (app){
 	/// stores the default density
 	const DEFAULT_DENSITY = 1;
 
-	// help text
+	/// help text
 	const string HELP_TEXT = "pngtext - hides data inside png images
 usage:
 pngtext [command] [options]
 commands:
  write         write to a png file, if --file is not specified, stdin is used to
                input data
- read          read data from a png file
+ read          read data from a png file.
  size          calculate how many bytes a png image can store.
  editor        opens a text editor in terminal to edit hidden text.
 options:
  --file -f     specify file containing data to write into png image
  --input -i    specify original png image to write to, or read from
- --ouput -o    specify file to write output to, for write, and read
+ --ouput -o    specify file to write output to, for write, and read. Default is
+               same as --input, will overwrite.
+--quality -q   specify quality, for use with size command. 
+               1 - Highest, 2 - High, 3 - Low, 4 - Zero quality. Default: 1
  --version -v  display this program's version
  --help -h     display this message";
 
@@ -47,36 +50,37 @@ options:
 				string[] errors;
 				options = readArgs(args[1 .. args.length].dup, command, errors);
 				foreach (error; errors){
-					writeln ("error: "~error);
+					stderr.writeln ("error: "~error);
 				}
 				if (errors.length > 0){
 					exit(1);
 				}
 				errors = validateOptions(options.dup, command);
 				foreach (error; errors){
-					writeln ("error: "~error);
+					stderr.writeln ("error: "~error);
 				}
 				if (errors.length > 0){
 					exit(1);
 				}
 				if (command == "write"){
 					string inputFile = options["input"];
-					string outputFile = options["output"];
+					string outputFile = "output" in options ? options["output"] : inputFile;
 					string text;
 					if ("file" in options){
 						text = cast(string)cast(char[])read(options["file"]);
 					}else{
-						writeln ("Enter text to write (Ctrl+D to terminate):");
 						text = "";
 						while (!stdin.eof){
 							char c;
 							readf ("%s", c);
 							text ~= c;
 						}
+						if (text[$-1] == 0xFF)
+							text.length--; // remove the 0xFF from end
 					}
 					errors = writeDataToPng(inputFile, outputFile, cast(ubyte[])cast(char[])text);
 					foreach (error; errors){
-						writeln (error);
+						stderr.writeln (error);
 					}
 					if (errors.length > 0){
 						exit(1);
@@ -87,7 +91,7 @@ options:
 					try{
 						text = readDataFromPng(inputFile);
 					}catch (Exception e){
-						writeln ("Failed to read from png image:\n",e.msg);
+						stderr.writeln ("Failed to read from png image:\n",e.msg);
 					}
 					if ("output" in options){
 						try{
@@ -95,41 +99,33 @@ options:
 							outputFile.write(cast(char[])text);
 							outputFile.close();
 						}catch (Exception e){
-							writeln ("Failed to write to output file:\n",e.msg);
+							stderr.writeln ("Failed to write to output file:\n",e.msg);
 						}
 					}else{
-						writeln (cast(string)cast(char[])text);
+						write (cast(string)cast(char[])text);
 					}
 				}else if (command == "size"){
 					string inputFile = options["input"];
-					// get the quality
-					writeln ("Select an image quality:\n"," [1] Highest\n [2] High\n [3] Low\n [4] Zero quality:");
-					string quality = readln;
-					quality.length --;
+					string quality = "quality" in options ? options["quality"] : "1";
 					if (["1","2","3","4"].hasElement(quality)){
 						try{
 							writeln (calculatePngCapacity(inputFile, quality=="1"?1 : (quality == "2" ? 2 : (quality == "3" ? 4 : 8))));
 						}catch (Exception e){
-							writeln ("Failed to read png image:\n",e.msg);
+							stderr.writeln ("Failed to read png image:\n",e.msg);
 						}
 					}else{
-						writeln ("Invalid selection");
+						stderr.writeln ("Invalid value for --quality provided");
 						exit (1);
 					}
 				}else if (command == "editor"){
-					// if no output specified, use readOnly=true
-					Editor editorInstance;
-					if ("output" in options)
-						editorInstance = new Editor(options["input"], options["output"], false);
-					else
-						editorInstance = new Editor(options["input"], "", true);
+					Editor editorInstance = new Editor(options["input"], "output" in options ? options["output"] : options["input"]);
 					editorInstance.run();
 					.destroy(editorInstance);
 				}
 			}
 		}else{
-			writeln("usage:\n pngtext [command] [options]");
-			writeln("or enter following for help:\n pngtext --help");
+			stderr.writeln("usage:\n pngtext [command] [options]");
+			stderr.writeln("or enter following for help:\n pngtext --help");
 		}
 	}
 
@@ -140,7 +136,7 @@ options:
 	private string[string] readArgs(string[] args, ref string command, ref string[] errors){
 		/// stores list of possible options
 		string[] optionNames = [
-			"file", "input", "output"
+			"file", "input", "quality", "output"
 		];
 		/// returns option name from the option provided in arg
 		/// returns zero length string if invalid
@@ -149,6 +145,7 @@ options:
 			const string[string] completeOptionNames = [
 				"-f" : "file",
 				"-i" : "input",
+				"-q" : "quality",
 				"-o" : "output"
 			];
 			if (option.length >= 3 && option[0 .. 2] == "--"){
@@ -173,7 +170,7 @@ options:
 		args = args[1 .. args.length];
 		for (uinteger i = 0; i < args.length; i ++){
 			if (args[i][0] == '-'){
-				// is an option, ad error if is !valid
+				// is an option, add error if is !valid
 				string optionName = getOptionName(args[i]);
 				if (optionName.length == 0 || optionNames.indexOf(optionName) == -1){
 					errors ~= args[i]~" is not a valid option, use --help";
@@ -200,7 +197,7 @@ options:
 		// assume that only correct options were passed, no "option does not exist" checks are here
 		string[] errors = [];
 		if (command == "write"){
-			foreach (option; ["input", "output"]){
+			foreach (option; ["input"]){
 				if (option !in options){
 					errors ~= "--"~option~" not specified";
 				}
