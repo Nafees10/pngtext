@@ -4,7 +4,7 @@ A steganography tool to store text or other data inside PNG images.
 
 ## Getting Started
 
-Follow these instructions to build pngtext
+Follow these instructions to build pngtext. These instructions guide on how to build pngtext as a program, but it can also be used as a library.
 
 ### Prerequisites
 
@@ -20,7 +20,7 @@ Run these commands to build pngtext:
 
 ```bash
 dub fetch pngtext
-dub build pngtext
+dub build pngtext -c=app
 ```
 
 If the build is succesful, the built binary will be in `~/.dub/packages/pngtext-*/pngtext/`  
