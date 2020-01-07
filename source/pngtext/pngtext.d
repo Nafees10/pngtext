@@ -200,7 +200,7 @@ private ubyte[] extractDataFromPngStream(ubyte[] stream){
 		ubyte bytesPerChar = 8 / density;
 		uinteger readTill = readFrom + (dLength * bytesPerChar);
 		// make sure it does not exceed the stream
-		if (readTill >= stream.length){
+		if (readTill > stream.length){
 			// return what was read
 			return data;
 		}
