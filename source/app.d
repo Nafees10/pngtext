@@ -120,7 +120,8 @@ options:
 					}
 				}else if (command == "editor"){
 					Editor editorInstance = new Editor(options["input"], "output" in options ? options["output"] : options["input"]);
-					editorInstance.run();
+					if (!editorInstance.run)
+						exit(1);
 					.destroy(editorInstance);
 				}
 			}

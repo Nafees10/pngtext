@@ -68,7 +68,9 @@ public:
 		.destroy(_shortcutLabel);
 	}
 	/// runs the editor
-	void run(){
+	/// 
+	/// Returns: false if there were errors(s)
+	bool run(){
 		_terminal.run;
 		// save
 		const string[] lines = _editor.lines.toArray;
@@ -89,7 +91,9 @@ public:
 			foreach (err; errors){
 				stderr.writeln(err);
 			}
+			return false;
 		}
+		return true;
 	}
 
 }
