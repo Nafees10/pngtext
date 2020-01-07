@@ -8,7 +8,7 @@
 		"qui": "~>0.2.0"
 	},
 	"description": "Hides data inside png images",
-	"copyright": "Copyright © 2018-2019, Nafees",
+	"copyright": "Copyright © 2018-2020, Nafees",
 	"license": "MIT",
 	"configurations": [
 		{
