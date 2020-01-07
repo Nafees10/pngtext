@@ -7,34 +7,25 @@ import utils.misc;
 import qui.qui;
 import qui.widgets;
 
+import std.stdio;
+
 /// The in-terminal text editor using qui.widgets.MemoWidget
-package class Editor{
+class Editor{
 private:
 	/// the terminal
 	QTerminal _terminal;
 	/// the text editor
 	MemoWidget _editor;
-	/// the label at bottom, acts as a status bar
-	TextLabelWidget _statusLabel;
+	/// to occupy space on left of 
+	SplitterWidget _statusBarLeft;
 	/// shows the shortcut keys, sits next to _statusLabel
 	TextLabelWidget _shortcutLabel;
-	/// Contains the _statusLabel and _shortcutLabel
+	/// Contains the and _shortcutLabel
 	QLayout _statusBar;
 	/// filename of original png
 	string _inputPng;
 	/// filename of output png
 	string _outputPng;
-	/// called by a key catching widget, on keyboard event
-	/// TODO: implement shortcuts, and changing status on _statusLabel, after I figure out that weird "color.d" bug
-	void onKeyboardEvent(QWidget widget, KeyboardEvent event){
-		if (event.key == Key.ctrlS){
-
-		}else if (event.key == Key.ctrlR){
-
-		}else{
-
-		}
-	}
 public:
 	/// constructor
 	/// 
@@ -46,46 +37,59 @@ public:
 		_terminal = new QTerminal(QLayout.Type.Vertical);
 		_statusBar = new QLayout(QLayout.Type.Horizontal);
 		_editor = new MemoWidget(!readOnly);
-		_statusLabel = new TextLabelWidget();
+		_statusBarLeft = new SplitterWidget();
+		_shortcutLabel = new TextLabelWidget();
 		// set up each widget
 		// first comes the editor:
 		_editor.wantsTab = false;
 		_editor.lines.loadArray(separateLines(cast(char[])readDataFromPng(_inputPng)));//load the lines
 		// now comes the _statusLabel
-		// invert the colors
-		_statusLabel.textColor = DEFAULT_BG;
-		_statusLabel.backgroundColor = DEFAULT_FG;
 		// now the _shortcutLabel
 		_shortcutLabel.textColor = DEFAULT_BG;
 		_shortcutLabel.backgroundColor = DEFAULT_FG;
-		if (readOnly)
-			_shortcutLabel.caption = "^C Exit";
-		else
-			_shortcutLabel.caption = "^S Save; ^R Revert; ^C Exit";
+		_shortcutLabel.caption = "Ctrl+C - Save & Exit";
 		_shortcutLabel.size.maxWidth = _shortcutLabel.caption.length;
 		// put both of these in _statusBar, and set it up too
-		_statusBar.addWidget([_statusLabel, _shortcutLabel]);
+		_statusBar.addWidget([_statusBarLeft, _shortcutLabel]);
 		_statusBar.size.maxHeight = 1;
 		_statusBar.size.minHeight = 1;
-		// now set up shortcut keys
-		_terminal.onKeyboardEvent = &onKeyboardEvent;
 		// put all those in QTerminal
 		_terminal.addWidget([_editor, _statusBar]);
 		// register all widgets
-		_terminal.registerWidget([_editor, _statusBar, _statusLabel, _shortcutLabel]);
-		// and its done, ready to start
+		_terminal.registerWidget([_editor, _statusBar, _statusBarLeft, _shortcutLabel]);
+		// and its done, ready to start*/
 	}
 	/// destructor
 	~this(){
 		.destroy(_terminal);
 		.destroy(_editor);
 		.destroy(_statusBar);
-		.destroy(_statusLabel);
+		.destroy(_statusBarLeft);
 		.destroy(_shortcutLabel);
 	}
 	/// runs the editor
 	void run(){
 		_terminal.run;
+		// save
+		const string[] lines = _editor.lines.toArray;
+		ubyte[] data;
+		uinteger writeTo = 0;
+		foreach (line; lines){
+			data.length += line.length+1;
+			foreach (ch; line){
+				data[writeTo] = cast(ubyte)ch;
+				writeTo++;
+			}
+			data[writeTo] = '\n';
+			writeTo++;
+		}
+		const string[] errors = writeDataToPng(_inputPng, _outputPng, data);
+		if (errors.length){
+			stderr.writeln("Errors while writing to image:");
+			foreach (err; errors){
+				stderr.writeln(err);
+			}
+		}
 	}
 
 }
@@ -93,11 +97,11 @@ public:
 /// reads a single string into string[], separating the lines
 string[] separateLines(string s){
 	string[] r;
-	for(uinteger i = 0, readFrom = 0, lastIndex = s.length - 1; i < s.length; i ++){
+	for(uinteger i = 0, readFrom = 0; i < s.length; i ++){
 		if (s[i] == '\n'){
 			r ~= s[readFrom .. i].dup;
 			readFrom = i+1;
-		}else if (i == lastIndex){
+		}else if (i+1 == s.length){
 			r ~= s[readFrom .. i + 1].dup;
 		}
 	}
