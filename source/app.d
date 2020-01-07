@@ -22,6 +22,7 @@ version (app){
 	const string HELP_TEXT = "pngtext - hides data inside png images
 usage:
 pngtext [command] [options]
+pngtext [pngFile.png] - to open basic text editor
 commands:
  write         write to a png file, if --file is not specified, stdin is used to
                input data
@@ -125,6 +126,7 @@ options:
 			}
 		}else{
 			stderr.writeln("usage:\n pngtext [command] [options]");
+			stderr.writeln("or, to open basic text editor:\n pngtext [pngFile.png]");
 			stderr.writeln("or enter following for help:\n pngtext --help");
 		}
 	}
@@ -163,7 +165,9 @@ options:
 			errors ~= "no arguments provided";
 		}
 		if (["read","write","size","editor"].indexOf(args[0]) == -1){
-			errors ~= "invalid command provided";
+			// beware ugly hack below
+			command = "editor";
+			args = [command, "-i", args[0]];
 		}else{
 			command = args[0];
 		}
