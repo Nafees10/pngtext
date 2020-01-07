@@ -8,8 +8,6 @@ version (app){
 	import std.file;
 	import pngtext.pngtext;
 	// QUI for the text editor
-	import qui.qui;
-	import qui.widgets;
 	import editor : Editor;
 
 	/// stores the version

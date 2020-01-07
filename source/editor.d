@@ -99,7 +99,7 @@ public:
 }
 
 /// reads a single string into string[], separating the lines
-string[] separateLines(string s){
+private string[] separateLines(string s){
 	string[] r;
 	for(uinteger i = 0, readFrom = 0; i < s.length; i ++){
 		if (s[i] == '\n'){
@@ -112,6 +112,6 @@ string[] separateLines(string s){
 	return r;
 }
 /// ditto
-string[] separateLines(char[] s){
+private string[] separateLines(char[] s){
 	return separateLines(cast(string)s);
 }
