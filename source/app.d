@@ -11,7 +11,7 @@ version (app){
 	import editor : Editor;
 
 	/// stores the version
-	const VERSION = "0.2.1";
+	const VERSION = "0.2.2";
 
 	/// stores the default density
 	const DEFAULT_DENSITY = 1;
