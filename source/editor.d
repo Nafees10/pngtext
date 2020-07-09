@@ -8,6 +8,7 @@ import qui.qui;
 import qui.widgets;
 
 import std.stdio;
+import std.conv : to;
 
 /// The in-terminal text editor using qui.widgets.MemoWidget
 class Editor{
@@ -42,7 +43,7 @@ public:
 		// set up each widget
 		// first comes the editor:
 		_editor.wantsTab = false;
-		_editor.lines.loadArray(separateLines(cast(char[])readDataFromPng(_inputPng)));//load the lines
+		_editor.lines.loadArray(separateLines((cast(string)cast(char[])readDataFromPng(_inputPng)).to!dstring));//load the lines
 		// now comes the _statusLabel
 		// now the _shortcutLabel
 		_shortcutLabel.textColor = DEFAULT_BG;
@@ -73,10 +74,15 @@ public:
 	bool run(){
 		_terminal.run;
 		// save
-		const string[] lines = _editor.lines.toArray;
+		const dstring[] lines = _editor.lines.toArray;
+		string[] utf8Lines;
+		utf8Lines.length = lines.length;
+		foreach (i, line; lines){
+			utf8Lines[i] = line.to!string;
+		}
 		ubyte[] data;
 		uinteger writeTo = 0;
-		foreach (line; lines){
+		foreach (line; utf8Lines){
 			data.length += line.length+1;
 			foreach (ch; line){
 				data[writeTo] = cast(ubyte)ch;
@@ -98,9 +104,12 @@ public:
 
 }
 
+/// reads a binary ubyte[] stream into UTF-8 string
+
+
 /// reads a single string into string[], separating the lines
-private string[] separateLines(string s){
-	string[] r;
+private dstring[] separateLines(dstring s){
+	dstring[] r;
 	for(uinteger i = 0, readFrom = 0; i < s.length; i ++){
 		if (s[i] == '\n'){
 			r ~= s[readFrom .. i].dup;
@@ -110,8 +119,4 @@ private string[] separateLines(string s){
 		}
 	}
 	return r;
-}
-/// ditto
-private string[] separateLines(char[] s){
-	return separateLines(cast(string)s);
 }
