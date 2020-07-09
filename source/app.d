@@ -11,7 +11,7 @@ version (app){
 	import editor : Editor;
 
 	/// stores the version
-	const VERSION = "0.2.2";
+	const VERSION = "0.3.0";
 
 	/// stores the default density
 	const DEFAULT_DENSITY = 1;
@@ -20,7 +20,7 @@ version (app){
 	const string HELP_TEXT = "pngtext - hides data inside png images
 usage:
 pngtext [command] [options]
-pngtext [pngFile.png] - to open basic text editor
+pngtext [pngFile.png] # to open a basic text editor
 commands:
  write         write to a png file, if --file is not specified, stdin is used to
                input data
