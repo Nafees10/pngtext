@@ -15,3 +15,5 @@ pngtext-test-*
 dub.selections.json
 .vscode/
 pngtext
+libpngtext.a
+
