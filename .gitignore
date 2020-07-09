@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+pngtext.so
+pngtext.dylib
+pngtext.dll
+pngtext.a
+pngtext.lib
+pngtext-test-*
+*.exe
+*.o
+*.obj
+*.lst
+dub.selections.json
+.vscode/
+pngtext
