@@ -1,14 +1,14 @@
 {
 	"name": "pngtext",
 	"authors": [
-		"Nafees"
+		"Nafees Hassan"
 	],
 	"dependencies": {
-		"utils": "~>0.3.1",
-		"qui": "~>0.3.0"
+		"utils": "~>0.3.8",
+		"qui": "~>0.3.1"
 	},
 	"description": "Hides data inside png images",
-	"copyright": "Copyright © 2018-2020, Nafees",
+	"copyright": "Copyright © 2018-2020, Nafees Hassan",
 	"license": "MIT",
 	"configurations": [
 		{
@@ -21,6 +21,6 @@
 			"targetType": "executable",
 			"targetName": "pngtext",
 			"versions": ["app"]
-		},
-	],
+		}
+	]
 }
