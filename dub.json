@@ -14,10 +14,10 @@
 		{
 			"name": "default",
 			"targetType": "library",
-			"targetName": "libpngtext"
+			"targetName": "pngtext"
 		},
 		{
-			"name": "app",
+			"name": "pngtextapp",
 			"targetType": "executable",
 			"targetName": "pngtext",
 			"versions": ["app"]
