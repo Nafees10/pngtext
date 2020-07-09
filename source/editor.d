@@ -104,9 +104,6 @@ public:
 
 }
 
-/// reads a binary ubyte[] stream into UTF-8 string
-
-
 /// reads a single string into string[], separating the lines
 private dstring[] separateLines(dstring s){
 	dstring[] r;
