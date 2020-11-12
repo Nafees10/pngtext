@@ -97,16 +97,18 @@ public ubyte[] readDataFromPng(string pngFilename){
 
 /// reads the header (data-length) from begining of png stream
 private uinteger readHeader(ubyte[] stream){
-	ubyte[HEADER_BYTES / BYTES_PER_PIXEL] headerBytes;
+	uinteger r;
+	ubyte* headerBytes = cast(ubyte*)cast(void*)&r;
+	//ubyte[HEADER_BYTES / BYTES_PER_PIXEL] headerBytes;
 	ubyte[HEADER_BYTES] headerPixels;
 	foreach (i, b; stream[0 .. HEADER_BYTES]){
 		headerPixels[i] = b.readLastBits(HEADER_DENSITY);
 	}
 	ubyte bytesPerChar = 8 / HEADER_DENSITY;
-	for (uinteger i = 0; i < HEADER_BYTES; i += bytesPerChar){
-		headerBytes[i / bytesPerChar] = joinByte(headerPixels[i .. i + bytesPerChar]);
+	for (uinteger i = 0; i * bytesPerChar < headerPixels.length; i ++){
+		headerBytes[i] = joinByte(headerPixels[i * bytesPerChar .. (i+1) * bytesPerChar]);
 	}
-	return charToDenary(cast(char[])headerBytes);
+	return r;
 }
 
 /// Returns: the header (first 3 pixels storing the data-length)
