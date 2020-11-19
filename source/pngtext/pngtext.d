@@ -54,6 +54,11 @@ private:
 	/// the data to encode into the image
 	ubyte[] _data;
 
+	/// "splits" a single ubyte over an array of ubyte
+	/// 
+	/// Returns: the ubyte[] where each ubyte's last bits are the original ubyte's bits
+	// TODO
+
 	/// Calculates capacity of an image
 	void calculateCapacity(ubyte density){
 		if (!_loaded){
@@ -83,6 +88,11 @@ private:
 			}
 		}
 	}
+	/// encodes _data to _stream. No checks are performed, so make sure the data fits before calling this
+	void encodeDataToStream(){
+		/// start with the header (length of data)
+
+	}
 public:
 	/// Constructor
 	this(){
@@ -106,7 +116,7 @@ public:
 	/// Returns: smallest value for density that can be used in this case, or 0 if data wont fit
 	static ubyte calculateOptimumDensity(uint n, uint pixels){
 		foreach (density; DENSITIES){
-			if (pixelsNeeded(n, density) < pixels)
+			if (pixelsNeeded(n, density) <= pixels)
 				return density;
 		}
 		return 0;

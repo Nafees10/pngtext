@@ -77,7 +77,7 @@ options:
 						if (text[$-1] == 0xFF)
 							text.length--; // remove the 0xFF from end
 					}
-					errors = writeDataToPng(inputFile, outputFile, cast(ubyte[])cast(char[])text);
+					//errors = writeDataToPng(inputFile, outputFile, cast(ubyte[])cast(char[])text); TODO
 					foreach (error; errors){
 						stderr.writeln (error);
 					}
@@ -88,7 +88,7 @@ options:
 					string inputFile = options["input"];
 					ubyte[] text;
 					try{
-						text = readDataFromPng(inputFile);
+						//text = readDataFromPng(inputFile); TODO
 					}catch (Exception e){
 						stderr.writeln ("Failed to read from png image:\n",e.msg);
 					}
@@ -108,7 +108,7 @@ options:
 					string quality = "quality" in options ? options["quality"] : "1";
 					if (["1","2","3","4"].hasElement(quality)){
 						try{
-							writeln (calculatePngCapacity(inputFile, quality=="1"?1 : (quality == "2" ? 2 : (quality == "3" ? 4 : 8))));
+							//writeln (calculatePngCapacity(inputFile, quality=="1"?1 : (quality == "2" ? 2 : (quality == "3" ? 4 : 8)))); TODO
 						}catch (Exception e){
 							stderr.writeln ("Failed to read png image:\n",e.msg);
 						}

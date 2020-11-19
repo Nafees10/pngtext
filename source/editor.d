@@ -43,7 +43,7 @@ public:
 		// set up each widget
 		// first comes the editor:
 		_editor.wantsTab = false;
-		_editor.lines.loadArray(separateLines((cast(string)cast(char[])readDataFromPng(_inputPng)).to!dstring));//load the lines
+		//_editor.lines.loadArray(separateLines((cast(string)cast(char[])readDataFromPng(_inputPng)).to!dstring));//load the lines TODO
 		// now comes the _statusLabel
 		// now the _shortcutLabel
 		_shortcutLabel.textColor = DEFAULT_BG;
@@ -91,7 +91,7 @@ public:
 			data[writeTo] = '\n';
 			writeTo++;
 		}
-		const string[] errors = writeDataToPng(_inputPng, _outputPng, data);
+		const string[] errors;// = writeDataToPng(_inputPng, _outputPng, data); TODO
 		if (errors.length){
 			stderr.writeln("Errors while writing to image:");
 			foreach (err; errors){
