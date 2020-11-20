@@ -66,8 +66,7 @@ private:
 	static void splitByte(ubyte val, ubyte densityIndex, ubyte[] r){
 		immutable ubyte mask = DENSITY_BYTES[densityIndex];
 		immutable ubyte density = DENSITIES[densityIndex];
-		immutable ubyte bytesCount = DENSITIES[$ - (densityIndex+1)]; // just read DENSITIES in reverse to read number of bytes needed
-		for (ubyte i = 0; i < bytesCount/*r.length*/; i ++){
+		for (ubyte i = 0; i < r.length; i ++){
 			r[i] = (r[i] & (~cast(int)mask) ) | ( ( val >> (i * density) ) & mask );
 		}
 	}
@@ -265,7 +264,10 @@ public:
 			cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
 		if (density == 0)
 			throw new Exception("data too large to fit");
-		
+		if (_data.length > HEADER_MAX)
+			throw new Exception("data is bigger than 16 MiB");
+		// if no exception thrown till now, might as well read the data
+
 	}
 }
 /// 
