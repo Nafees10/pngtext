@@ -65,7 +65,7 @@ private:
 		immutable ubyte mask = DENSITY_BYTES[densityIndex];
 		immutable ubyte density = DENSITIES[densityIndex];
 		immutable ubyte bytesCount = DENSITIES[$ - (densityIndex+1)]; // just read DENSITIES in reverse to read number of bytes needed
-		for (ubyte i = 0; i < bytesCount; i ++){
+		for (ubyte i = 0; i < bytesCount/*r.length*/; i ++){
 			r[i] = (r[i] & (~cast(int)mask) ) | ( ( val >> (i * density) ) & mask );
 		}
 	}
@@ -108,9 +108,11 @@ private:
 		return header;
 	}
 	/// writes bytes to header in stream
-	void writeHeader(ubyte[HEADER_LENGTH] header){
+	void writeHeader(ubyte[] header){
 		immutable ubyte byteCount = HEADER_BYTES / HEADER_LENGTH; /// number of bytes in stream for single byte of header
 		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		if (header.length > HEADER_LENGTH)
+			header = header[0 .. HEADER_LENGTH];
 		foreach (i, byteVal; header){
 			splitByte(byteVal, cast(ubyte)densityIndex, _stream[i*byteCount .. (i+1)*byteCount]);
 		}
@@ -129,7 +131,7 @@ private:
 	}
 	/// encodes _data to _stream. No checks are performed, so make sure the data fits before calling this
 	void encodeDataToStream(ubyte density){
-		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(density);
 		immutable ubyte byteCount = 8 / density;
 		immutable int offset = HEADER_BYTES;
 		foreach (i, byteVal; _data){
@@ -138,12 +140,16 @@ private:
 	}
 	/// reads into _data from _stream. _data must have enough length before this function is called
 	void decodeDataFromStream(ubyte density, int length){
-		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(density);
 		immutable ubyte byteCount = 8 / density;
 		immutable int offset = HEADER_BYTES;
 		foreach (i; 0 .. length){
 			_data[i] = joinByte(_stream[(i*byteCount) + offset .. ((i+1)*byteCount) + offset], densityIndex);
 		}
+	}
+	/// Creates a dummy stream of length l. USE FOR DEBUG ONLY
+	void createDummyStream(uint l){
+		_stream.length = l;
 	}
 public:
 	/// Constructor
@@ -252,7 +258,7 @@ public:
 unittest{
 	import std.stdio : writeln;
 	import std.conv : to;
-	writeln("unitests for PNGText.splitByte and PNGText.joinByte class started.");
+	writeln("unittests for PNGText.splitByte and PNGText.joinByte started");
 	// splitByte
 	ubyte[] bytes;
 	bytes.length = 8;
@@ -272,4 +278,34 @@ unittest{
 	PNGText.splitByte(cast(ubyte)0B10101010, cast(ubyte)3, bytes);
 	assert(bytes[0] == 0B10101010);
 	assert(PNGText.joinByte(bytes[0 .. 1], cast(ubyte)3) == 0B10101010);
+
+	writeln("unittests for PNGText.writeHeader and PNGText.readHeader started");
+	// write some stuff
+	PNGText obj = new PNGText();
+	obj.createDummyStream(1024);
+	obj._stream[] = 0B01011100;
+	bytes.length = HEADER_LENGTH;
+	bytes[] = 0B11001100;
+	obj.writeHeader(bytes);
+	assert (obj.readHeader == bytes);
+	// write some more stuff
+	bytes[] = 0B00111100;
+	obj.writeHeader(bytes);
+	assert(obj.readHeader == bytes);
+	assert(obj.readHeader[0] == 0B00111100);
+
+	writeln("unittests for PNGText.encodeDataToStream and PNGText.decodeDataFromStream started");
+	bytes.length = 100;
+	foreach (i; 0 .. bytes.length){
+		bytes[i] = cast(ubyte)i;
+	}
+	foreach (density; DENSITIES){
+		obj._data = bytes.dup;
+		writeln("\tencoding with density=",density);
+		obj.encodeDataToStream(density);
+		obj._data[] = 0;
+		writeln("\tdecoding with density=",density);
+		obj.decodeDataFromStream(density, 100);
+		assert(obj._data == bytes);
+	}
 }
