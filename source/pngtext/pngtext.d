@@ -15,20 +15,14 @@ debug{import std.stdio, std.conv : to;}
 // constants
 
 /// Number of bytes per pixel (red, green, blue, & alpha = 4)
-private const BYTES_PER_PIXEL = 4;
+private enum BYTES_PER_PIXEL = 4;
 /// Number of bytes per pixel that are to be used
-private const BYTES_USE_PER_PIXEL = 3;
+private enum BYTES_USE_PER_PIXEL = 3;
 /// Number of bytes taken by header
-private const HEADER_BYTES = 12;
+private enum HEADER_BYTES = 12;
 /// Density for writing/reading header
-private const HEADER_DENSITY = 2;
+private enum HEADER_DENSITY = 2;
 
-/// Possible values for density
-private const ubyte[4] DENSITIES = [1, 2, 4, 8];
-/// names associated with above densities
-private const string[4] DENSITY_NAMES = ["low", "medium", "high", "maximum"];
-/// quality names associated with above densities
-private const string[4] QUALITY_NAMES = ["highest", "medium", "low", "zero"];
 /// Low storage density (1 bit per 8 bits)
 public enum DENSITY_LOW = 1;
 /// Medium storage density (2 bits per 8 bits)
@@ -37,6 +31,15 @@ public enum DENSITY_MEDIUM = 2;
 public enum DENSITY_HIGH = 4;
 /// Maximum storage density (8 bits per 8 bits)
 public enum DENSITY_MAX = 8;
+
+/// Possible values for density
+private const ubyte[4] DENSITIES = [1, 2, 4, 8];
+/// names associated with above densities
+private const string[4] DENSITY_NAMES = ["low", "medium", "high", "maximum"];
+/// quality names associated with above densities
+private const string[4] QUALITY_NAMES = ["highest", "medium", "low", "zero"];
+/// Bytes with the number of bits as 1 same as density
+private const ubyte[4] DENSITY_BYTES = [0B00000001, 0B00000011, 0B00001111, 0B11111111];
 
 /// To read/write data from a png image
 class PNGText{
@@ -56,8 +59,17 @@ private:
 
 	/// "splits" a single ubyte over an array of ubyte
 	/// 
-	/// Returns: the ubyte[] where each ubyte's last bits are the original ubyte's bits
-	// TODO
+	/// `val` is the byte to split
+	/// `densityMask` is the index of chosen density in `DENSITIES`
+	/// `r` is the array/slice to put the splitted byte to
+	void splitByte(ubyte val, ubyte densityIndex, ref ubyte[] r){
+		immutable ubyte mask = DENSITY_BYTES[densityIndex];
+		immutable ubyte density = DENSITIES[densityIndex];
+		immutable ubyte bytesCount = DENSITIES[$ - (densityIndex+1)]; // just read DENSITIES in reverse to read number of bytes needed
+		for (ubyte i = 0; i < bytesCount; i ++){
+			r[i] = (r[i] & !mask) | ( ( val >> (i * density) ) & mask );
+		}
+	}
 
 	/// Calculates capacity of an image
 	void calculateCapacity(ubyte density){
