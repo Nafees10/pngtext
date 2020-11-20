@@ -15,10 +15,12 @@ debug{import std.stdio, std.conv : to;}
 private enum BYTES_PER_PIXEL = 4;
 /// Number of bytes per pixel that are to be used
 private enum BYTES_USE_PER_PIXEL = 3;
-/// Number of bytes taken by header
+/// Number of bytes taken by header in image (after encoding)
 private enum HEADER_BYTES = 12;
 /// Density for writing/reading header
 private enum HEADER_DENSITY = 2;
+/// length of data stored in header
+private enum HEADER_LENGTH = HEADER_BYTES * HEADER_DENSITY / 8;
 
 /// Low storage density (1 bit per 8 bits)
 public enum DENSITY_LOW = 1;
@@ -59,7 +61,7 @@ private:
 	/// `val` is the byte to split
 	/// `densityMask` is the index of chosen density in `DENSITIES`
 	/// `r` is the array/slice to put the splitted byte to
-	static void splitByte(ubyte val, ubyte densityIndex, ref ubyte[] r){
+	static void splitByte(ubyte val, ubyte densityIndex, ubyte[] r){
 		immutable ubyte mask = DENSITY_BYTES[densityIndex];
 		immutable ubyte density = DENSITIES[densityIndex];
 		immutable ubyte bytesCount = DENSITIES[$ - (densityIndex+1)]; // just read DENSITIES in reverse to read number of bytes needed
@@ -84,7 +86,7 @@ private:
 			_capacity[] = -1;
 			return;
 		}
-		immutable uint pixels = _pngImage.width * _pngImage.height;
+		immutable int pixels = _pngImage.width * _pngImage.height;
 		_capacity[density] = 0;
 		if (pixels <= HEADER_BYTES / BYTES_PER_PIXEL)
 			return;
@@ -95,9 +97,27 @@ private:
 		foreach (density; DENSITIES)
 			calculateCapacity(density);
 	}
+	/// reads header bytes from stream
+	ubyte[HEADER_LENGTH] readHeader(){
+		ubyte[HEADER_LENGTH] header;
+		immutable ubyte byteCount = HEADER_BYTES / HEADER_LENGTH; /// number of bytes in stream for single byte of header
+		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		foreach (i; 0 .. HEADER_LENGTH){
+			header[i] = joinByte(_stream[i*byteCount .. (i+1)*byteCount], densityIndex);
+		}
+		return header;
+	}
+	/// writes bytes to header in stream
+	void writeHeader(ubyte[HEADER_LENGTH] header){
+		immutable ubyte byteCount = HEADER_BYTES / HEADER_LENGTH; /// number of bytes in stream for single byte of header
+		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		foreach (i, byteVal; header){
+			splitByte(byteVal, cast(ubyte)densityIndex, _stream[i*byteCount .. (i+1)*byteCount]);
+		}
+	}
 	/// writes _stream back into _pngImage
 	void encodeStreamToImage(){
-		for (uint i = 0, readIndex = 0; i < _pngImage.imageData.bytes.length && readIndex < _stream.length;
+		for (int i = 0, readIndex = 0; i < _pngImage.imageData.bytes.length && readIndex < _stream.length;
 		i += BYTES_PER_PIXEL){
 			foreach (j; 0 .. 3){
 				if (readIndex >= _stream.length)
@@ -108,9 +128,22 @@ private:
 		}
 	}
 	/// encodes _data to _stream. No checks are performed, so make sure the data fits before calling this
-	void encodeDataToStream(){
-		/// start with the header (length of data)
-
+	void encodeDataToStream(ubyte density){
+		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		immutable ubyte byteCount = 8 / density;
+		immutable int offset = HEADER_BYTES;
+		foreach (i, byteVal; _data){
+			splitByte(byteVal, densityIndex, _stream[(i*byteCount) + offset .. ((i+1)*byteCount) + offset]);
+		}
+	}
+	/// reads into _data from _stream. _data must have enough length before this function is called
+	void decodeDataFromStream(ubyte density, int length){
+		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
+		immutable ubyte byteCount = 8 / density;
+		immutable int offset = HEADER_BYTES;
+		foreach (i; 0 .. length){
+			_data[i] = joinByte(_stream[(i*byteCount) + offset .. ((i+1)*byteCount) + offset], densityIndex);
+		}
 	}
 public:
 	/// Constructor
@@ -123,7 +156,7 @@ public:
 	/// Calculates number of pixels needed to store n number of bytes
 	///
 	/// Returns: number of pixels needed, -1 if invalid density
-	static int pixelsNeeded(uint n, ubyte density){
+	static int pixelsNeeded(int n, ubyte density){
 		static immutable int headerPixels = HEADER_BYTES / BYTES_PER_PIXEL;
 		if (n == 0)
 			return headerPixels;
@@ -133,7 +166,7 @@ public:
 	/// Calculates smallest value for density with which n bytes of data will fit in a number of pixels
 	/// 
 	/// Returns: smallest value for density that can be used in this case, or 0 if data wont fit
-	static ubyte calculateOptimumDensity(uint n, uint pixels){
+	static ubyte calculateOptimumDensity(int n, int pixels){
 		foreach (density; DENSITIES){
 			if (pixelsNeeded(n, density) <= pixels)
 				return density;
@@ -197,7 +230,7 @@ public:
 		_pngImage = readPng(_filename).getAsTrueColorImage;
 		immutable int height = _pngImage.height, width = _pngImage.width;
 		_stream.length = height * width * BYTES_USE_PER_PIXEL;
-		for (uint i = 0, writeIndex = 0; i < _pngImage.imageData.bytes.length; i += BYTES_PER_PIXEL){
+		for (int i = 0, writeIndex = 0; i < _pngImage.imageData.bytes.length; i += BYTES_PER_PIXEL){
 			foreach (j; 0 .. 3){
 				_stream[writeIndex] = _pngImage.imageData.bytes[i+j];
 				writeIndex ++;
