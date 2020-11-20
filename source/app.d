@@ -11,16 +11,18 @@ version (app){
 	import editor : Editor;
 
 	/// stores the version
-	const VERSION = "0.3.0";
+	const VERSION = "1.0.0";
 
 	/// stores the default density
 	const DEFAULT_DENSITY = 1;
 
 	/// help text
-	const string HELP_TEXT = "pngtext - hides data inside png images
+	enum string HELP_TEXT = 
+"pngtext - hides data inside png images
+Made by Nafees Hassan (Nafees10@GitHub.com) at https://github.com/Nafees10/pngtext
 usage:
 pngtext [command] [options]
-pngtext [pngFile.png] # to open a basic text editor
+ pngtext [pngFile.png] # to open a basic text editor
 commands:
  write         write to a png file, if --file is not specified, stdin is used to
                input data
@@ -33,14 +35,20 @@ options:
  --ouput -o    specify file to write output to, for write, and read. Default is
                same as --input, will overwrite.
 --quality -q   specify quality, for use with size command. 
-               1 - Highest, 2 - High, 3 - Low, 4 - Zero quality. Default: 1
- --version -v  display this program's version
+               1 - Highest, 2 - Medium, 3 - Low, 4 - Zero quality. Default: 1
+ --version -v  display this program's version and build info
  --help -h     display this message";
+
+	/// build info
+	enum string BUILD_INFO = 
+	"version: "~VERSION~"
+	PNGText constants:
+	"~CONST_INFO;
 
 	void main(string[] args){
 		if (args.length >= 2){
 			if (args[1] == "--version" || args[1] == "-v"){
-				writeln(VERSION);
+				writeln(BUILD_INFO);
 			}else if (args[1] == "--help" || args[1] == "-h"){
 				writeln(HELP_TEXT);
 			}else{

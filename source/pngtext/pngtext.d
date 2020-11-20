@@ -7,7 +7,8 @@ import arsd.png;
 import arsd.color;
 import utils.misc;
 import std.file;
-debug{import std.stdio, std.conv : to;}
+import std.conv : to;
+debug{import std.stdio;}
 
 // constants
 
@@ -23,6 +24,15 @@ private enum HEADER_DENSITY = 2;
 private enum HEADER_LENGTH = HEADER_BYTES * HEADER_DENSITY / 8;
 /// max number that can be stored in header
 private enum HEADER_MAX = (1 << HEADER_LENGTH * 8) - 1;
+
+version (app){
+	package enum CONST_INFO = 
+		"bytes per pixel: "~BYTES_USE_PER_PIXEL.to!string~"
+		bytes for header: "~HEADER_BYTES.to!string~"
+		bits/byte (density) for header: "~HEADER_DENSITY~"
+		header length: "~HEADER_LENGTH.to!string~"
+		max stored data length: "~HEADER_MAX.to!string~" bytes";
+}
 
 /// Low storage density (1 bit per 8 bits)
 public enum DENSITY_LOW = 1;
@@ -43,7 +53,7 @@ private const string[4] QUALITY_NAMES = ["highest", "medium", "low", "zero"];
 private const ubyte[4] DENSITY_BYTES = [0B00000001, 0B00000011, 0B00001111, 0B11111111];
 
 /// To read/write data from a png image
-class PNGText{
+public class PNGText{
 private:
 	/// the png image currently being edited
 	TrueColorImage _pngImage;
