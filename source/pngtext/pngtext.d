@@ -21,6 +21,8 @@ private enum HEADER_BYTES = 12;
 private enum HEADER_DENSITY = 2;
 /// length of data stored in header
 private enum HEADER_LENGTH = HEADER_BYTES * HEADER_DENSITY / 8;
+/// max number that can be stored in header
+private enum HEADER_MAX = (1 << HEADER_LENGTH * 8) - 1;
 
 /// Low storage density (1 bit per 8 bits)
 public enum DENSITY_LOW = 1;
@@ -252,6 +254,18 @@ public:
 		if (_filename == "" || exists(_filename))
 			throw new Exception(_filename~" is not a valid filename, or file already exists");
 		writePng(_filename, _pngImage);
+	}
+	/// encodes data into loaded image.
+	/// 
+	/// Throws: Exception on error
+	void encode(){
+		if (!imageLoaded)
+			throw new Exception("no image loaded, cannot encode data");
+		immutable ubyte density = calculateOptimumDensity(cast(int)_data.length, 
+			cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
+		if (density == 0)
+			throw new Exception("data too large to fit");
+		
 	}
 }
 /// 
