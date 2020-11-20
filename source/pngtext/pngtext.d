@@ -6,9 +6,6 @@ module pngtext.pngtext;
 import arsd.png;
 import arsd.color;
 import utils.misc;
-import utils.lists;
-import utils.baseconv;
-import std.math;
 import std.file;
 debug{import std.stdio, std.conv : to;}
 
@@ -62,13 +59,23 @@ private:
 	/// `val` is the byte to split
 	/// `densityMask` is the index of chosen density in `DENSITIES`
 	/// `r` is the array/slice to put the splitted byte to
-	void splitByte(ubyte val, ubyte densityIndex, ref ubyte[] r){
+	static void splitByte(ubyte val, ubyte densityIndex, ref ubyte[] r){
 		immutable ubyte mask = DENSITY_BYTES[densityIndex];
 		immutable ubyte density = DENSITIES[densityIndex];
 		immutable ubyte bytesCount = DENSITIES[$ - (densityIndex+1)]; // just read DENSITIES in reverse to read number of bytes needed
 		for (ubyte i = 0; i < bytesCount; i ++){
-			r[i] = (r[i] & !mask) | ( ( val >> (i * density) ) & mask );
+			r[i] = (r[i] & (~cast(int)mask) ) | ( ( val >> (i * density) ) & mask );
 		}
+	}
+	/// opposite of splitByte, joins last bits from ubyte[] to make a single ubyte
+	static ubyte joinByte(ubyte[] bytes, ubyte densityIndex){
+		immutable ubyte mask = DENSITY_BYTES[densityIndex];
+		immutable ubyte density = DENSITIES[densityIndex];
+		ubyte r = 0;
+		for (ubyte i = 0; i < bytes.length; i ++){
+			r |= ( bytes[i] & mask ) << (i * density);
+		}
+		return r;
 	}
 
 	/// Calculates capacity of an image
@@ -207,4 +214,29 @@ public:
 			throw new Exception(_filename~" is not a valid filename, or file already exists");
 		writePng(_filename, _pngImage);
 	}
+}
+/// 
+unittest{
+	import std.stdio : writeln;
+	import std.conv : to;
+	writeln("unitests for PNGText.splitByte and PNGText.joinByte class started.");
+	// splitByte
+	ubyte[] bytes;
+	bytes.length = 8;
+	bytes[] = 128;
+	PNGText.splitByte(cast(ubyte)0B10101010, cast(ubyte)0, bytes);
+	assert(bytes == [128, 129, 128, 129, 128, 129, 128, 129]);
+	assert(PNGText.joinByte(bytes, cast(ubyte)0) == 0B10101010);
+
+	PNGText.splitByte(cast(ubyte)0B10101010, cast(ubyte)1, bytes);
+	assert(bytes[0 .. 4] == [130, 130, 130, 130]);
+	assert(PNGText.joinByte(bytes[0 .. 4], cast(ubyte)1) == 0B10101010);
+
+	PNGText.splitByte(cast(ubyte)0B10101010, cast(ubyte)2, bytes);
+	assert(bytes[0 .. 2] == [0B10001010, 0B10001010]);
+	assert(PNGText.joinByte(bytes[0 .. 2], cast(ubyte)2) == 0B10101010);
+
+	PNGText.splitByte(cast(ubyte)0B10101010, cast(ubyte)3, bytes);
+	assert(bytes[0] == 0B10101010);
+	assert(PNGText.joinByte(bytes[0 .. 1], cast(ubyte)3) == 0B10101010);
 }
