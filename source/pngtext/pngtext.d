@@ -296,6 +296,7 @@ public:
 }
 /// 
 unittest{
+	writeln("pngtext.d unittests:");
 	import std.stdio : writeln;
 	import std.conv : to;
 	writeln("unittests for PNGText.splitByte and PNGText.joinByte started");
@@ -348,4 +349,5 @@ unittest{
 		obj.decodeDataFromStream(density, 100);
 		assert(obj._data == bytes);
 	}
+	writeln("pngtext.d unittests over");
 }
