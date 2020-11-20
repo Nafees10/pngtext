@@ -266,8 +266,32 @@ public:
 			throw new Exception("data too large to fit");
 		if (_data.length > HEADER_MAX)
 			throw new Exception("data is bigger than 16 MiB");
-		// if no exception thrown till now, might as well read the data
-
+		// put header in, well, header
+		ubyte[HEADER_LENGTH] header;
+		foreach (i; 0 .. HEADER_LENGTH)
+			header[i] = cast(ubyte)( _data.length >> (i * 8) );
+		this.writeHeader(header);
+		this.encodeDataToStream(density);
+	}
+	/// decodes data from loaded image
+	/// 
+	/// Throws: Exception on error
+	void decode(){
+		if (!imageLoaded)
+			throw new Exception("no image loaded, cannot encode data");
+		// read header, needed for further tests
+		if (_stream.length < HEADER_BYTES)
+			throw new Exception("image too small to hold data");
+		immutable ubyte[HEADER_LENGTH] header = readHeader();
+		int len = 0;
+		foreach (i, byteVal; header)
+			len |= byteVal << (i * 8);
+		immutable ubyte density = calculateOptimumDensity(cast(int)_data.length, 
+			cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
+		if (len > HEADER_MAX || len > capacity(DENSITY_MAX) || density == 0)
+			throw new Exception("invalid data");
+		_data.length = len;
+		decodeDataFromStream(density, len);
 	}
 }
 /// 
