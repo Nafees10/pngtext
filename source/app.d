@@ -41,9 +41,9 @@ options:
 
 	/// build info
 	enum string BUILD_INFO = 
-	"version: "~VERSION~"
-	PNGText constants:
-	"~CONST_INFO;
+"version: "~VERSION~"
+PNGText constants:
+"~CONST_INFO;
 
 	void main(string[] args){
 		if (args.length >= 2){
@@ -69,14 +69,15 @@ options:
 				if (errors.length > 0){
 					exit(1);
 				}
+				PNGText pngEdit = command == "editor" ? null : new PNGText;
 				if (command == "write"){
 					string inputFile = options["input"];
 					string outputFile = "output" in options ? options["output"] : inputFile;
-					string text;
+					char[] text;
 					if ("file" in options){
-						text = cast(string)cast(char[])read(options["file"]);
+						text = cast(char[])read(options["file"]);
 					}else{
-						text = "";
+						text = [];
 						while (!stdin.eof){
 							char c;
 							readf ("%s", c);
@@ -85,18 +86,25 @@ options:
 						if (text[$-1] == 0xFF)
 							text.length--; // remove the 0xFF from end
 					}
-					//errors = writeDataToPng(inputFile, outputFile, cast(ubyte[])cast(char[])text); TODO
-					foreach (error; errors){
-						stderr.writeln (error);
-					}
-					if (errors.length > 0){
+					try{
+						pngEdit.filename = inputFile;
+						pngEdit.load;
+						pngEdit.data = cast(ubyte[]) text;
+						pngEdit.encode;
+						pngEdit.filename = outputFile;
+						pngEdit.save;
+					}catch (Exception e){
+						stderr.writeln(e.msg);
 						exit(1);
 					}
 				}else if (command == "read"){
 					string inputFile = options["input"];
-					ubyte[] text;
+					char[] text;
 					try{
-						//text = readDataFromPng(inputFile); TODO
+						pngEdit.filename = inputFile;
+						pngEdit.load;
+						pngEdit.decode;
+						text = cast(char[])pngEdit.data;
 					}catch (Exception e){
 						stderr.writeln ("Failed to read from png image:\n",e.msg);
 					}
@@ -109,14 +117,16 @@ options:
 							stderr.writeln ("Failed to write to output file:\n",e.msg);
 						}
 					}else{
-						write (cast(string)cast(char[])text);
+						write (cast(string)text);
 					}
 				}else if (command == "size"){
 					string inputFile = options["input"];
 					string quality = "quality" in options ? options["quality"] : "1";
 					if (["1","2","3","4"].hasElement(quality)){
 						try{
-							//writeln (calculatePngCapacity(inputFile, quality=="1"?1 : (quality == "2" ? 2 : (quality == "3" ? 4 : 8)))); TODO
+							pngEdit.filename = inputFile;
+							writeln(pngEdit.capacity(quality == "1" ? DENSITY_LOW : quality == "2" ? DENSITY_MEDIUM :
+								quality == "3" ? DENSITY_HIGH : DENSITY_MAX));
 						}catch (Exception e){
 							stderr.writeln ("Failed to read png image:\n",e.msg);
 						}
@@ -130,6 +140,7 @@ options:
 						exit(1);
 					.destroy(editorInstance);
 				}
+				.destroy(pngEdit);
 			}
 		}else{
 			stderr.writeln("usage:\n pngtext [command] [options]");
