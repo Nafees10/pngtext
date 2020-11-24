@@ -26,12 +26,12 @@ private enum HEADER_LENGTH = HEADER_BYTES * HEADER_DENSITY / 8;
 private enum HEADER_MAX = (1 << HEADER_LENGTH * 8) - 1;
 
 version (app){
-	package enum CONST_INFO = 
-		"bytes per pixel: "~BYTES_USE_PER_PIXEL.to!string~"
-		bytes for header: "~HEADER_BYTES.to!string~"
-		bits/byte (density) for header: "~HEADER_DENSITY~"
-		header length: "~HEADER_LENGTH.to!string~"
-		max stored data length: "~HEADER_MAX.to!string~" bytes";
+	public enum CONST_INFO = 
+"bytes per pixel: "~BYTES_USE_PER_PIXEL.to!string~"
+bytes for header: "~HEADER_BYTES.to!string~"
+bits/byte (density) for header: "~HEADER_DENSITY.to!string~"
+header length: "~HEADER_LENGTH.to!string~"
+max stored data length: "~HEADER_MAX.to!string~" bytes";
 }
 
 /// Low storage density (1 bit per 8 bits)
@@ -64,7 +64,7 @@ private:
 	/// if there is an image loaded
 	bool _loaded = false;
 	/// max number of bytes currently loaded image can store. -1 if not yet calculated
-	int[DENSITIES.length] _capacity;
+	int[ubyte] _capacity;
 	/// the data to encode into the image
 	ubyte[] _data;
 
@@ -93,10 +93,8 @@ private:
 
 	/// Calculates capacity of an image
 	void calculateCapacity(ubyte density){
-		if (!_loaded){
-			_capacity[] = -1;
+		if (!_loaded)
 			return;
-		}
 		immutable int pixels = _pngImage.width * _pngImage.height;
 		_capacity[density] = 0;
 		if (pixels <= HEADER_BYTES / BYTES_PER_PIXEL)
@@ -141,19 +139,17 @@ private:
 		}
 	}
 	/// encodes _data to _stream. No checks are performed, so make sure the data fits before calling this
-	void encodeDataToStream(ubyte density){
+	void encodeDataToStream(ubyte density, int offset = HEADER_BYTES){
 		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(density);
 		immutable ubyte byteCount = 8 / density;
-		immutable int offset = HEADER_BYTES;
 		foreach (i, byteVal; _data){
 			splitByte(byteVal, densityIndex, _stream[(i*byteCount) + offset .. ((i+1)*byteCount) + offset]);
 		}
 	}
 	/// reads into _data from _stream. _data must have enough length before this function is called
-	void decodeDataFromStream(ubyte density, int length){
+	void decodeDataFromStream(ubyte density, int length, int offset = HEADER_BYTES){
 		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(density);
 		immutable ubyte byteCount = 8 / density;
-		immutable int offset = HEADER_BYTES;
 		foreach (i; 0 .. length){
 			_data[i] = joinByte(_stream[(i*byteCount) + offset .. ((i+1)*byteCount) + offset], densityIndex);
 		}
@@ -166,7 +162,6 @@ public:
 	/// Constructor
 	this(){
 		_loaded = false;
-		_capacity[] = -1;
 	}
 	~this(){
 	}
@@ -232,7 +227,7 @@ public:
 	int capacity(ubyte density){
 		if (!isValidDensity(density))
 			return -1;
-		if (_capacity[density] == -1)
+		if (density !in _capacity || _capacity[density] == -1)
 			calculateCapacity(density);
 		return _capacity[density];
 	}
@@ -243,7 +238,6 @@ public:
 		if (_filename == "" || !exists(_filename) || !isFile(_filename))
 			throw new Exception(_filename~" is not a valid filename, or file does not exist");
 		_loaded = false;
-		_capacity[] = -1;
 		_pngImage = readPng(_filename).getAsTrueColorImage;
 		immutable int height = _pngImage.height, width = _pngImage.width;
 		_stream.length = height * width * BYTES_USE_PER_PIXEL;
@@ -253,14 +247,13 @@ public:
 				writeIndex ++;
 			}
 		}
-		_capacity[] = -1;
 		_loaded = true;
 	}
 	/// Saves an image
 	/// 
 	/// Throws: Exception in case of error
 	void save(){
-		if (_filename == "" || exists(_filename))
+		if (_filename == "")
 			throw new Exception(_filename~" is not a valid filename, or file already exists");
 		writePng(_filename, _pngImage);
 	}
@@ -288,7 +281,7 @@ public:
 	/// Throws: Exception on error
 	void decode(){
 		if (!imageLoaded)
-			throw new Exception("no image loaded, cannot encode data");
+			throw new Exception("no image loaded, cannot decode data");
 		// read header, needed for further tests
 		if (_stream.length < HEADER_BYTES)
 			throw new Exception("image too small to hold data");
