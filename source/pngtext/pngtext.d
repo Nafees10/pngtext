@@ -26,6 +26,7 @@ private enum HEADER_LENGTH = HEADER_BYTES * HEADER_DENSITY / 8;
 private enum HEADER_MAX = (1 << HEADER_LENGTH * 8) - 1;
 
 version (app){
+	/// description of constants
 	public enum CONST_INFO = 
 "bytes per pixel: "~BYTES_USE_PER_PIXEL.to!string~"
 bytes for header: "~HEADER_BYTES.to!string~"
@@ -109,7 +110,7 @@ private:
 	/// reads header bytes from stream
 	ubyte[HEADER_LENGTH] readHeader(){
 		ubyte[HEADER_LENGTH] header;
-		immutable ubyte byteCount = HEADER_BYTES / HEADER_LENGTH; /// number of bytes in stream for single byte of header
+		immutable ubyte byteCount = 8 / HEADER_DENSITY; /// number of bytes in stream for single byte of header
 		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
 		foreach (i; 0 .. HEADER_LENGTH){
 			header[i] = joinByte(_stream[i*byteCount .. (i+1)*byteCount], densityIndex);
@@ -118,24 +119,12 @@ private:
 	}
 	/// writes bytes to header in stream
 	void writeHeader(ubyte[] header){
-		immutable ubyte byteCount = HEADER_BYTES / HEADER_LENGTH; /// number of bytes in stream for single byte of header
+		immutable ubyte byteCount = 8 / HEADER_DENSITY; /// number of bytes in stream for single byte of header
 		immutable ubyte densityIndex = cast(ubyte)DENSITIES.indexOf(HEADER_DENSITY);
 		if (header.length > HEADER_LENGTH)
 			header = header[0 .. HEADER_LENGTH];
 		foreach (i, byteVal; header){
-			splitByte(byteVal, cast(ubyte)densityIndex, _stream[i*byteCount .. (i+1)*byteCount]);
-		}
-	}
-	/// writes _stream back into _pngImage
-	void encodeStreamToImage(){
-		for (int i = 0, readIndex = 0; i < _pngImage.imageData.bytes.length && readIndex < _stream.length;
-		i += BYTES_PER_PIXEL){
-			foreach (j; 0 .. 3){
-				if (readIndex >= _stream.length)
-					break;
-				_pngImage.imageData.bytes[i+j] = _stream[readIndex];
-				readIndex ++;
-			}
+			splitByte(byteVal, densityIndex, _stream[i*byteCount .. (i+1)*byteCount]);
 		}
 	}
 	/// encodes _data to _stream. No checks are performed, so make sure the data fits before calling this
@@ -152,6 +141,18 @@ private:
 		immutable ubyte byteCount = 8 / density;
 		foreach (i; 0 .. length){
 			_data[i] = joinByte(_stream[(i*byteCount) + offset .. ((i+1)*byteCount) + offset], densityIndex);
+		}
+	}
+	/// writes _stream back into _pngImage
+	void encodeStreamToImage(){
+		for (int i = 0, readIndex = 0; i < _pngImage.imageData.bytes.length && readIndex < _stream.length;
+		i += BYTES_PER_PIXEL){
+			foreach (j; 0 .. 3){
+				if (readIndex >= _stream.length)
+					break;
+				_pngImage.imageData.bytes[i+j] = _stream[readIndex];
+				readIndex ++;
+			}
 		}
 	}
 	/// Creates a dummy stream of length l. USE FOR DEBUG ONLY
@@ -268,13 +269,14 @@ public:
 		if (density == 0)
 			throw new Exception("data too large to fit");
 		if (_data.length > HEADER_MAX)
-			throw new Exception("data is bigger than 16 MiB");
+			throw new Exception("data is bigger than "~HEADER_MAX.to!string~" bytes");
 		// put header in, well, header
 		ubyte[HEADER_LENGTH] header;
 		foreach (i; 0 .. HEADER_LENGTH)
 			header[i] = cast(ubyte)( _data.length >> (i * 8) );
 		this.writeHeader(header);
 		this.encodeDataToStream(density);
+		this.encodeStreamToImage();
 	}
 	/// decodes data from loaded image
 	/// 
@@ -329,14 +331,13 @@ unittest{
 	obj.createDummyStream(1024);
 	obj._stream[] = 0B01011100;
 	bytes.length = HEADER_LENGTH;
-	bytes[] = 0B11001100;
+	bytes = [215, 1, 0];
 	obj.writeHeader(bytes);
 	assert (obj.readHeader == bytes);
 	// write some more stuff
 	bytes[] = 0B00111100;
 	obj.writeHeader(bytes);
-	assert(obj.readHeader == bytes);
-	assert(obj.readHeader[0] == 0B00111100);
+	assert(obj.readHeader == [0B00111100, 0B00111100, 0B00111100]);
 
 	writeln("unittests for PNGText.encodeDataToStream and PNGText.decodeDataFromStream started");
 	bytes.length = 100;
