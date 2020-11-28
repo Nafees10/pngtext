@@ -8,7 +8,7 @@ version (app){
 	import std.file;
 	import pngtext.pngtext;
 	// QUI for the text editor
-	import editor : Editor;
+	import editor;
 
 	/// stores the version
 	const VERSION = "1.0.0";
@@ -21,7 +21,8 @@ version (app){
 "pngtext - hides data inside png images
 Made by Nafees Hassan (Nafees10@GitHub.com) at https://github.com/Nafees10/pngtext
 usage:
-pngtext [command] [options]
+ pngtext [command] [options]
+ or:
  pngtext [pngFile.png] # to open a basic text editor
 commands:
  write         write to a png file, if --file is not specified, stdin is used to
@@ -135,10 +136,13 @@ PNGText constants:
 						exit (1);
 					}
 				}else if (command == "editor"){
-					Editor editorInstance = new Editor(options["input"], "output" in options ? options["output"] : options["input"]);
+					/*Editor editorInstance = new Editor(options["input"], "output" in options ? options["output"] : options["input"]);
 					if (!editorInstance.run)
 						exit(1);
-					.destroy(editorInstance);
+					.destroy(editorInstance);*/
+					App editor = new App(options["input"], "output" in options ? options["output"] : options["input"]);
+					editor.run();
+					.destroy(editor);
 				}
 				.destroy(pngEdit);
 			}
