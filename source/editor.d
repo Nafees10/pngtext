@@ -307,7 +307,7 @@ public:
 		_title = new TitleWidget(baseName(imagePath).to!dstring);
 		_memo = new MemoPlusPlusWidget();
 		_log = new LogPlusPlusWidget("Error Messages", 3, Color.red, Color.black);
-		_statusBar = new StatusBarWidget(3, Color.white, Color.black);
+		_statusBar = new StatusBarWidget(3, Color.black, Color.white);
 		// arrange em
 		this.addWidget([_title, _memo, _log, _statusBar]);
 		// make _imageMan
