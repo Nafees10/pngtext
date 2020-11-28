@@ -45,11 +45,12 @@ public enum DENSITY_HIGH = 4;
 public enum DENSITY_MAX = 8;
 
 /// Possible values for density
-private const ubyte[4] DENSITIES = [1, 2, 4, 8];
+public const ubyte[4] DENSITIES = [1, 2, 4, 8];
 /// names associated with above densities
-private const string[4] DENSITY_NAMES = ["low", "medium", "high", "maximum"];
+public const string[4] DENSITY_NAMES = ["low", "medium", "high", "maximum"];
 /// quality names associated with above densities
-private const string[4] QUALITY_NAMES = ["highest", "medium", "low", "zero"];
+public const string[4] QUALITY_NAMES = ["highest", "medium", "low", "zero"];
+
 /// Bytes with the number of bits as 1 same as density
 private const ubyte[4] DENSITY_BYTES = [0B00000001, 0B00000011, 0B00001111, 0B11111111];
 
