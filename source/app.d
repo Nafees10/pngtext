@@ -6,6 +6,7 @@ version (app){
 	import core.stdc.stdlib;
 	import utils.misc;
 	import std.file;
+	import std.path : baseName;
 	import pngtext.pngtext;
 	// QUI for the text editor
 	import editor;
@@ -136,11 +137,7 @@ PNGText constants:
 						exit (1);
 					}
 				}else if (command == "editor"){
-					/*Editor editorInstance = new Editor(options["input"], "output" in options ? options["output"] : options["input"]);
-					if (!editorInstance.run)
-						exit(1);
-					.destroy(editorInstance);*/
-					App editor = new App(options["input"], "output" in options ? options["output"] : options["input"]);
+					App editor = new App(options["input"], "output" in options ? options["output"] : options["input"], baseName(args[0]) == "pnghacker");
 					editor.run();
 					.destroy(editor);
 				}
@@ -187,7 +184,7 @@ PNGText constants:
 			errors ~= "no arguments provided";
 		}
 		if (["read","write","size","editor"].indexOf(args[0]) == -1){
-			// beware ugly hack below
+			// beware tiny hack below
 			command = "editor";
 			args = [command, "-i", args[0]];
 		}else{
