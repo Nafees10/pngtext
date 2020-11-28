@@ -302,12 +302,15 @@ protected:
 	}
 public:
 	/// Constructor
-	this(string imagePath, string outputPath){
+	this(string imagePath, string outputPath, bool hackerman = false){
 		// construct the interface
-		_title = new TitleWidget(baseName(imagePath).to!dstring);
+		_title = new TitleWidget(baseName(imagePath).to!dstring, 
+			Color.black, hackerman ? Color.green : Color.white);
 		_memo = new MemoPlusPlusWidget();
-		_log = new LogPlusPlusWidget("Error Messages", 3, Color.red, Color.black);
-		_statusBar = new StatusBarWidget(3, Color.black, Color.white);
+		if (hackerman)
+			_memo.textColor = Color.green;
+		_log = new LogPlusPlusWidget("Error Messages", 3, hackerman ? Color.green : Color.red, Color.black);
+		_statusBar = new StatusBarWidget(3, Color.black, hackerman ? Color.green : Color.white);
 		// arrange em
 		this.addWidget([_title, _memo, _log, _statusBar]);
 		// make _imageMan
