@@ -281,7 +281,7 @@ private:
 	}
 protected:
 	override void timerEvent(uinteger msecs){
-		//super.timerEvent(msecs); // HACK: THIS IS COMMENTED OUT AS A HACK
+		super.timerEvent(msecs);
 		if (_msecsUntilReset > 0)
 			_msecsUntilReset -= msecs;
 		if (_log.show && _msecsUntilReset <= 0)
@@ -317,12 +317,6 @@ public:
 		_imageMan = new PNGText();
 		_imageMan.filename = imagePath;
 		_outputPath = outputPath;
-		/// UGLY HACK BELOW.
-		/// HACK: QTerminal does not call it's own timerEvent, as a workaround, get some widget to call it
-		_memo.onTimerEvent = delegate(QWidget, uinteger msecs){
-			this.timerEvent(msecs);
-			return false;
-		};
 	}
 	~this(){
 		.destroy(_imageMan);
