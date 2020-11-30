@@ -1,6 +1,8 @@
 # pngtext
 
-A steganography tool to store text or other data inside PNG images.
+A steganography tool to store text or other data inside PNG images.  
+
+**NOTE: this version (v1.0.0) is incompatible with previous versions**
 
 ## Getting Started
 
