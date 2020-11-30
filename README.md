@@ -42,7 +42,7 @@ This describes how to use pngtext.
 pngtext comes with a built in simple terminal based text editor. To edit hidden text in a png image, run this:  
 `pngtext path/to/pngImage.png`  
 or:  
-`pngtext editor -i path/to/pngImage.png`  
+`pngtext editor -i path/to/pngImage.png -o path/to/outputImage.png`  
 
 ### Commmands
 
@@ -68,9 +68,12 @@ To read the stored data into a file, use the `--output` or `-o` option to specif
 To calculate exactly how many bytes a png image will be able to store, use the `size` command:  
 `pngtext size -i pngFile.png [-q QUALITY]`  
 This will write the number of bytes `pngFile.png` can hold if all pixels are used.  
-Values for `-q` option are below:
+Possible values for `-q` option are below:
 
-* `1` - highest quality - 4 bits per pixel - 12.5% loss
-* `2` - high quality - 8 bits per pixel - 25% loss
-* `3` - low quality - 16 bits per pixel - 50% loss
-* `4` - zero quality - 32 bits per pixel - 100% loss
+* `1` - highest quality - 3 bits per pixel
+* `2` - high quality - 6 bits per pixel
+* `3` - low quality - 12 bits per pixel
+* `4` - zero quality - 24 bits per pixel
+
+_1 pixel = 4 bytes = 32 bits_  
+_the alpha byte is not used, so transparancy of an image will not be affected_
