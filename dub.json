@@ -5,7 +5,7 @@
 	],
 	"dependencies": {
 		"utils": "~>0.3.8",
-		"qui": "~>0.5.0"
+		"qui": "~>0.5.1"
 	},
 	"description": "Hides data inside png images",
 	"copyright": "Copyright © 2018-2020, Nafees Hassan",
