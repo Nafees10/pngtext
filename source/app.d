@@ -11,12 +11,6 @@ version (app){
 	// QUI for the text editor
 	import editor;
 
-	/// stores the version
-	const VERSION = "1.0.0";
-
-	/// stores the default density
-	const DEFAULT_DENSITY = 1;
-
 	/// help text
 	enum string HELP_TEXT = 
 "pngtext - hides data inside png images
@@ -42,10 +36,7 @@ options:
  --help -h     display this message";
 
 	/// build info
-	enum string BUILD_INFO = 
-"version: "~VERSION~"
-PNGText constants:
-"~CONST_INFO;
+	enum string BUILD_INFO = CONST_INFO;
 
 	void main(string[] args){
 		if (args.length >= 2){
