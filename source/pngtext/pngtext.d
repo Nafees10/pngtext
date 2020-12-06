@@ -95,13 +95,9 @@ private:
 
 	/// Calculates capacity of an image
 	void calculateCapacity(ubyte density){
-		if (!_loaded)
+		if (!_loaded || _stream.length <= HEADER_BYTES)
 			return;
-		immutable int pixels = _pngImage.width * _pngImage.height;
-		_capacity[density] = 0;
-		if (pixels <= HEADER_BYTES / BYTES_PER_PIXEL)
-			return;
-		_capacity[density] = ((pixels - (HEADER_BYTES / BYTES_PER_PIXEL)) * density) / 8; // (totalPixels - headerPixels)*8 / density
+		_capacity[density] = ((cast(int)_stream.length - HEADER_BYTES) * density) / 8; /// bytes * density / 8;
 	}
 	/// ditto
 	void calculateCapacity(){
@@ -171,7 +167,7 @@ public:
 	///
 	/// Returns: number of pixels needed, -1 if invalid density
 	static int pixelsNeeded(int n, ubyte density){
-		static immutable int headerPixels = HEADER_BYTES / BYTES_PER_PIXEL;
+		static immutable int headerPixels = HEADER_BYTES / BYTES_USE_PER_PIXEL;
 		if (n == 0)
 			return headerPixels;
 		immutable int r = (n * 8)/density; // (n*8) is number of bits in n, overall, this becomes the number of bytes needed
@@ -259,16 +255,23 @@ public:
 			throw new Exception(_filename~" is not a valid filename, or file already exists");
 		writePng(_filename, _pngImage);
 	}
+	/// Calculates the least density that can be used to store n bytes into loaded image.
+	/// 
+	/// Returns: calculated density, or zero in case of error
+	ubyte calculateOptimumDensity(int n){
+		if (!imageLoaded || n <= HEADER_BYTES)
+			return 0;
+		return calculateOptimumDensity(n, cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
+	}
 	/// encodes data into loaded image.
 	/// 
 	/// Throws: Exception on error
 	void encode(){
 		if (!imageLoaded)
 			throw new Exception("no image loaded, cannot encode data");
-		immutable ubyte density = calculateOptimumDensity(cast(int)_data.length, 
-			cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
+		immutable ubyte density = calculateOptimumDensity(cast(int)_data.length);
 		if (density == 0)
-			throw new Exception("data too large to fit");
+			throw new Exception("image too small to hold data");
 		if (_data.length > HEADER_MAX)
 			throw new Exception("data is bigger than "~HEADER_MAX.to!string~" bytes");
 		// put header in, well, header
@@ -287,13 +290,12 @@ public:
 			throw new Exception("no image loaded, cannot decode data");
 		// read header, needed for further tests
 		if (_stream.length < HEADER_BYTES)
-			throw new Exception("image too small to hold data");
+			throw new Exception("image too small to hold data, invalid header");
 		immutable ubyte[HEADER_LENGTH] header = readHeader();
 		int len = 0;
 		foreach (i, byteVal; header)
 			len |= byteVal << (i * 8);
-		immutable ubyte density = calculateOptimumDensity(cast(int)_data.length, 
-			cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
+		immutable ubyte density = calculateOptimumDensity(len);
 		if (len > HEADER_MAX || len > capacity(DENSITY_MAX) || density == 0)
 			throw new Exception("invalid data");
 		_data.length = len;
