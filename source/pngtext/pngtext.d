@@ -12,6 +12,9 @@ debug{import std.stdio;}
 
 // constants
 
+/// version
+private enum PNGTEXT_VERSION = "1.0.1";
+
 /// Number of bytes per pixel (red, green, blue, & alpha = 4)
 private enum BYTES_PER_PIXEL = 4;
 /// Number of bytes per pixel that are to be used
@@ -28,7 +31,8 @@ private enum HEADER_MAX = (1 << HEADER_LENGTH * 8) - 1;
 version (app){
 	/// description of constants
 	public enum CONST_INFO = 
-"bytes per pixel: "~BYTES_USE_PER_PIXEL.to!string~"
+"PNGText version: "~PNGTEXT_VERSION~"
+bytes per pixel: "~BYTES_USE_PER_PIXEL.to!string~"
 bytes for header: "~HEADER_BYTES.to!string~"
 bits/byte (density) for header: "~HEADER_DENSITY.to!string~"
 header length: "~HEADER_LENGTH.to!string~"
@@ -104,6 +108,24 @@ private:
 		foreach (density; DENSITIES)
 			calculateCapacity(density);
 	}
+	/// Calculates number of bytes needed in _stream to store n bytes of data. Adjusts for HEADER_BYTES
+	///
+	/// Returns: number of bytes needed
+	static int streamBytesNeeded(int n, ubyte density){
+		if (n == 0)
+			return HEADER_BYTES;
+		return HEADER_BYTES + ((n * 8)/density);
+	}
+	/// Calculates smallest value for density with which n bytes of data will fit in a number of bytes of _stream
+	/// 
+	/// Returns: smallest value for density that can be used in this case, or 0 if data wont fit
+	static ubyte calculateOptimumDensity(int n, int streamBytes){
+		foreach (density; DENSITIES){
+			if (streamBytesNeeded(n, density) <= streamBytes)
+				return density;
+		}
+		return 0;
+	}
 	/// reads header bytes from stream
 	ubyte[HEADER_LENGTH] readHeader(){
 		ubyte[HEADER_LENGTH] header;
@@ -162,26 +184,6 @@ public:
 		_loaded = false;
 	}
 	~this(){
-	}
-	/// Calculates number of pixels needed to store n number of bytes
-	///
-	/// Returns: number of pixels needed, -1 if invalid density
-	static int pixelsNeeded(int n, ubyte density){
-		static immutable int headerPixels = HEADER_BYTES / BYTES_USE_PER_PIXEL;
-		if (n == 0)
-			return headerPixels;
-		immutable int r = (n * 8)/density; // (n*8) is number of bits in n, overall, this becomes the number of bytes needed
-		return headerPixels + (r/BYTES_USE_PER_PIXEL) + (r % BYTES_USE_PER_PIXEL ? 1 : 0);
-	}
-	/// Calculates smallest value for density with which n bytes of data will fit in a number of pixels
-	/// 
-	/// Returns: smallest value for density that can be used in this case, or 0 if data wont fit
-	static ubyte calculateOptimumDensity(int n, int pixels){
-		foreach (density; DENSITIES){
-			if (pixelsNeeded(n, density) <= pixels)
-				return density;
-		}
-		return 0;
 	}
 	/// Checks if a number is a valid value for use as storage density
 	/// 
@@ -261,7 +263,7 @@ public:
 	ubyte calculateOptimumDensity(int n){
 		if (!imageLoaded || n <= HEADER_BYTES)
 			return 0;
-		return calculateOptimumDensity(n, cast(int)(_stream.length - HEADER_BYTES) / BYTES_USE_PER_PIXEL);
+		return calculateOptimumDensity(n, cast(int)_stream.length);
 	}
 	/// encodes data into loaded image.
 	/// 
