@@ -208,39 +208,24 @@ private:
 	/// status bar
 	StatusBarWidget _statusBar;
 
-	/// stores how many bytes can be stored at what densities
-	int[ubyte] _capacity;
 	/// how many msecs until the shortcut keys are shown again in status bar instead of "File saved..."
 	int _msecsUntilReset;
 	
 	/// updates status bar
 	void updateStatusBar(){
 		immutable int bytesCount = _memo.bytesCount;
-		ubyte density = 0;
-		int max = 0;
-		foreach (d; DENSITIES){
-			if (_capacity[d] >= bytesCount){
-				density = d;
-				max = _capacity[d];
-				break;
-			}
-		}
+		immutable ubyte density = _imageMan.calculateOptimumDensity(bytesCount);
+		immutable int max = density == 0 ? 0 : _imageMan.capacity(density);
 		_statusBar.setText(0, 
 			STATUSBAR_QUALITY_PREFIX~(density == 0 ? "OVER CAPACITY" : _imageMan.qualityName(density).to!dstring));
 		// now for bytes count
 		_statusBar.setText(1, STATUSBAR_BYTECOUNT_PREFIX~bytesCount.to!dstring~"/"~max.to!dstring~"/"~
-			_capacity[DENSITIES[$-1]].to!dstring);
+			_imageMan.capacity(DENSITY_MAX).to!dstring);
 		// now shortcuts or leave it at that "file saved"
 		if (_msecsUntilReset <= 0)
 			_statusBar.setText(2, STATUSBAR_SHORTCUTS);
 	}
 
-	/// initializes _capacity
-	void initCapacity(){
-		foreach (i; DENSITIES){
-			_capacity[i] = _imageMan.capacity(i);
-		}
-	}
 	/// loads image, initializes _imageMan.
 	/// 
 	/// Displays error in _log if any
@@ -329,8 +314,6 @@ public:
 	override void run(){
 		initImageMan();
 		initMemo();
-		if (_imageMan.imageLoaded)
-			initCapacity;
 		super.run();
 	}
 }
