@@ -2,7 +2,7 @@
 
 A steganography tool to store text or other data inside PNG images.  
 
-**NOTE: this version (v1.0.0) is incompatible with previous versions**
+**NOTE: this version (v1.0.1) is incompatible with previous versions**
 
 ## Getting Started
 
@@ -13,7 +13,7 @@ Follow these instructions to build pngtext. These instructions guide on how to b
 You need to have these installed on you machine to build pngtext:
 
 1. the `dub` package manager
-1. a dlang compiler. `dmd` works
+1. a dlang compiler. `dmd` works, use `gdc` if you care about speed
 1. an internet connection for `dub` to fetch the dependencies
 
 ### Building
@@ -22,7 +22,7 @@ Run these commands to build pngtext:
 
 ```bash
 dub fetch pngtext
-dub build pngtext -c=pngtextapp -b=release
+dub build pngtext -c=pngtextapp -b=release #--compiler=gdc # uncomment to use gdc to compile
 ```
 
 If the build is succesful, the built binary will be in `~/.dub/packages/pngtext-*/pngtext/`  
