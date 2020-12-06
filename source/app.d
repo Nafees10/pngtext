@@ -127,6 +127,7 @@ PNGText constants:
 					if (["1","2","3","4"].hasElement(quality)){
 						try{
 							pngEdit.filename = inputFile;
+							pngEdit.load();
 							writeln(pngEdit.capacity(quality == "1" ? DENSITY_LOW : quality == "2" ? DENSITY_MEDIUM :
 								quality == "3" ? DENSITY_HIGH : DENSITY_MAX));
 						}catch (Exception e){
